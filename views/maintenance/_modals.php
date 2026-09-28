@@ -81,7 +81,7 @@ $request = $request ?? null;
         <div class="modal-content">
             <div class="modal-header">
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-                <h4 class="modal-title"><?= _l('ams_mt_complete'); ?></h4>
+                <h4 class="modal-title"><?= _l('ams_mt_complete') . ams_help_icon(_l('ams_mt_complete_help')); ?></h4>
             </div>
             <div class="modal-body">
                 <div class="row">
@@ -90,7 +90,6 @@ $request = $request ?? null;
                     <div class="col-md-6"><?= render_input('downtime_hours', 'ams_mt_downtime', '', 'number', ['step' => '0.5', 'min' => '0']); ?></div>
                 </div>
                 <?= render_textarea('resolution', 'ams_mt_resolution'); ?>
-                <p class="text-muted tw-text-sm"><?= _l('ams_mt_complete_help'); ?></p>
             </div>
             <div class="modal-footer">
                 <button type="submit" class="btn btn-success"><?= _l('ams_mt_complete'); ?></button>

@@ -57,6 +57,11 @@ class Ams_audit_model extends App_Model
             'next_audit_date' => ! empty($input['next_audit_date']) ? to_sql_date($input['next_audit_date']) : null,
             'notes'           => trim((string) ($input['notes'] ?? '')) ?: null,
         ];
+        foreach (['location_id' => ['ams_locations', 'id', 'ams_location'], 'category_id' => ['ams_categories', 'id', 'ams_category'], 'department_id' => ['departments', 'departmentid', 'ams_department']] as $field => [$table, $pk, $label]) {
+            if ($data[$field] && total_rows($this->t($table), [$pk => $data[$field]]) === 0) {
+                return ['success' => false, 'message' => _l('ams_invalid_value', _l($label))];
+            }
+        }
 
         if ($id) {
             $audit = $this->get($id);
@@ -125,6 +130,16 @@ class Ams_audit_model extends App_Model
             }
         }
 
+        // Claim the draft first (a double-click finds it already started), then write
+        // the snapshot in the same transaction so a failure leaves a clean draft.
+        $this->db->trans_begin();
+        $this->db->where('id', (int) $id)->where('status', 'draft')->update($this->t('ams_audits'), ['status' => 'in_progress', 'started_at' => date('Y-m-d H:i:s')]);
+        if ($this->db->affected_rows() !== 1) {
+            $this->db->trans_rollback();
+
+            return ['success' => false, 'message' => _l('ams_audit_wrong_status')];
+        }
+
         $rows = [];
         foreach ($ids as $assetId) {
             $rows[] = ['audit_id' => (int) $id, 'asset_id' => $assetId, 'expected_location_id' => $locations[$assetId] ?? null, 'result' => 'pending'];
@@ -132,8 +147,12 @@ class Ams_audit_model extends App_Model
         foreach (array_chunk($rows, 500) as $chunk) {
             $this->db->insert_batch($this->t('ams_audit_lines'), $chunk);
         }
+        if ($this->db->trans_status() === false) {
+            $this->db->trans_rollback();
 
-        $this->db->where('id', (int) $id)->update($this->t('ams_audits'), ['status' => 'in_progress', 'started_at' => date('Y-m-d H:i:s')]);
+            return ['success' => false, 'message' => _l('ams_db_error')];
+        }
+        $this->db->trans_commit();
         log_activity('AMS audit started [' . $audit->audit_no . ', ' . count($ids) . ' assets]');
 
         return ['success' => true, 'message' => _l('ams_audit_started', count($ids))];
@@ -175,11 +194,19 @@ class Ams_audit_model extends App_Model
 
         $line     = $this->db->where('audit_id', (int) $auditId)->where('asset_id', (int) $asset->id)->get($this->t('ams_audit_lines'))->row();
         $explicit = (int) ($input['found_location_id'] ?? 0) ?: null;
+        if ($explicit && total_rows($this->t('ams_locations'), ['id' => $explicit, 'active' => 1]) === 0) {
+            return ['success' => false, 'message' => _l('ams_invalid_value', _l('ams_location'))];
+        }
         if (! $line) {
             // Not in the snapshot: seen here although expected elsewhere (or out of scope).
             $result   = 'unexpected';
             $expected = $asset->location_id;
             $found    = $explicit ?: ($audit->location_id ? (int) $audit->location_id : null);
+        } elseif ($line->result === 'unexpected') {
+            // Re-scan of an out-of-scope asset: it stays "unexpected" (only where it was seen is refreshed).
+            $expected = $line->expected_location_id;
+            $found    = $explicit ?: ((int) $line->found_location_id ?: null);
+            $result   = 'unexpected';
         } else {
             // Without an explicit "found at" location it was seen where expected.
             $expected = $line->expected_location_id;

@@ -51,7 +51,7 @@ $opts = function ($rows, $selected) {
                             <div class="col-md-4"><?= render_select('delivery_location_id', $locations, ['id', 'name'], 'ams_po_deliver_to', $v('delivery_location_id')); ?></div>
                         </div>
 
-                        <h4 class="tw-font-semibold tw-text-lg tw-mt-4"><?= _l('ams_po_lines'); ?></h4>
+                        <h4 class="tw-font-semibold tw-text-lg tw-mt-4"><?= _l('ams_po_lines') . ams_help_icon(_l('ams_po_lines_help')); ?></h4>
                         <div class="table-responsive">
                             <table class="table table-bordered" id="ams-po-lines">
                                 <thead>
@@ -104,7 +104,6 @@ $opts = function ($rows, $selected) {
                                 </tfoot>
                             </table>
                         </div>
-                        <p class="text-muted tw-text-sm"><?= _l('ams_po_lines_help'); ?></p>
 
                         <div class="row">
                             <div class="col-md-6"><?= render_textarea('notes', 'ams_notes', $v('notes')); ?></div>

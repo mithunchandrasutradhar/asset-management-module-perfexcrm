@@ -65,7 +65,7 @@ class My_assets extends AdminController
     public function acceptance($id)
     {
         $acc = $this->ams_people_model->get_acceptance($id);
-        if (! $acc || ((int) $acc->staff_id !== (int) get_staff_user_id() && staff_cant('view', 'ams_assets'))) {
+        if (! $acc || ((int) $acc->staff_id !== (int) get_staff_user_id() && ! $this->can_see_acceptance($acc))) {
             ajax_access_denied();
         }
 
@@ -107,7 +107,7 @@ class My_assets extends AdminController
     public function signature($id)
     {
         $acc = $this->ams_people_model->get_acceptance($id);
-        if (! $acc || ! $acc->signature_file || ((int) $acc->staff_id !== (int) get_staff_user_id() && staff_cant('view', 'ams_assets'))) {
+        if (! $acc || ! $acc->signature_file || ((int) $acc->staff_id !== (int) get_staff_user_id() && ! $this->can_see_acceptance($acc))) {
             show_404();
         }
 
@@ -128,5 +128,11 @@ class My_assets extends AdminController
         if (! ams_can_use_my_assets()) {
             ajax_access_denied();
         }
+    }
+
+    /** Someone else's sign-off: assets need asset view, accessories need accessory view. */
+    private function can_see_acceptance($acc)
+    {
+        return $acc->rel_type === 'accessory' ? ams_item_can('view', 'accessory') : staff_can('view', 'ams_assets');
     }
 }

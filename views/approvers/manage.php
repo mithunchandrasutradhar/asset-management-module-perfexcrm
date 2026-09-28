@@ -4,8 +4,7 @@
     <div class="content">
         <div class="row">
             <div class="col-md-12">
-                <h4 class="tw-mt-0 tw-font-bold tw-text-xl tw-mb-3"><?= _l('ams_department_approvers'); ?></h4>
-                <div class="alert alert-info"><?= _l('ams_department_approvers_help'); ?></div>
+                <?php $this->load->view(AMS_MODULE_NAME . '/setup/_tabs', ['active' => 'approvers', 'help' => _l('ams_department_approvers_help')]); ?>
                 <div class="panel_s">
                     <div class="panel-body panel-table-full">
                         <?php render_datatable([_l('ams_department'), _l('ams_approvers'), _l('ams_members'), _l('ams_waiting_approval')], 'ams-approvers'); ?>

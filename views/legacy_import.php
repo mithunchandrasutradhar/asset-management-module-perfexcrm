@@ -15,11 +15,10 @@ $badge = [
     <div class="content">
         <div class="row">
             <div class="col-md-12">
-                <h4 class="tw-mt-0 tw-font-bold tw-text-xl tw-mb-3"><?= _l('ams_legacy_import'); ?></h4>
+                <h4 class="tw-mt-0 tw-font-bold tw-text-xl tw-mb-3"><?= _l('ams_legacy_import') . ams_help_icon(_l('ams_legacy_import_intro')); ?></h4>
 
                 <div class="panel_s">
                     <div class="panel-body">
-                        <p><?= _l('ams_legacy_import_intro'); ?></p>
                         <ul class="tw-mb-4">
                             <li><?= _l('ams_legacy_import_includes'); ?></li>
                             <li><?= _l('ams_legacy_import_excludes'); ?></li>

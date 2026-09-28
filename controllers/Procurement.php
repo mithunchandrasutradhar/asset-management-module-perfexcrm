@@ -84,7 +84,10 @@ class Procurement extends AdminController
 
     public function submit($id)
     {
-        $this->require_json_cap('create');
+        // Whoever may prepare the draft (create or edit) may also submit it.
+        if (staff_cant('create', 'ams_procurement') && staff_cant('edit', 'ams_procurement')) {
+            $this->json(['success' => false, 'message' => _l('access_denied')]);
+        }
         $this->json($this->ams_procurement_model->submit($id));
     }
 

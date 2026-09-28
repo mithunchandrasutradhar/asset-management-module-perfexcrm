@@ -18,7 +18,7 @@ $chart  = [
 <div id="wrapper">
     <div class="content">
         <div class="tw-flex tw-flex-wrap tw-justify-between tw-items-center tw-mb-3 tw-gap-2">
-            <h4 class="tw-my-0 tw-font-bold tw-text-xl"><a href="<?= admin_url('asset_management/reports'); ?>" class="tw-text-neutral-500"><?= _l('ams_reports'); ?></a> › <?= _l('ams_report_maintenance_cost'); ?></h4>
+            <h4 class="tw-my-0 tw-font-bold tw-text-xl"><a href="<?= admin_url('asset_management/reports'); ?>" class="tw-text-neutral-500"><?= _l('ams_reports'); ?></a> › <?= _l('ams_report_maintenance_cost') . ams_help_icon(_l('ams_report_mt_cost_help')); ?></h4>
             <form method="get" class="tw-flex tw-flex-wrap tw-gap-2 tw-items-end">
                 <div><?= render_date_input('from', 'ams_date_from', _d($from)); ?></div>
                 <div><?= render_date_input('to', 'ams_date_to', _d($to)); ?></div>
@@ -79,7 +79,6 @@ $chart  = [
                         </tbody>
                     </table>
                 </div>
-                <p class="text-muted tw-text-sm tw-mt-3 tw-mb-0"><?= _l('ams_report_mt_cost_help'); ?> <a href="<?= admin_url('asset_management/maintenance'); ?>"><?= _l('ams_maintenance'); ?> →</a></p>
             </div>
         </div>
     </div>

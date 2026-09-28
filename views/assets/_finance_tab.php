@@ -38,7 +38,7 @@ $today = date('Y-m-d');
             </table>
         </div>
         <div class="col-md-6">
-            <h4 class="tw-mt-0 tw-font-semibold tw-text-base"><?= _l('ams_tco'); ?></h4>
+            <h4 class="tw-mt-0 tw-font-semibold tw-text-base"><?= _l('ams_tco') . ams_help_icon(_l('ams_tco_help')); ?></h4>
             <table class="table table-bordered">
                 <tbody>
                     <?= $row(_l('ams_purchase_cost'), $money($a->purchase_cost)); ?>
@@ -47,7 +47,6 @@ $today = date('Y-m-d');
                     <?= $row('<strong>' . _l('ams_tco_total') . '</strong>', $tco['mixed'] ? '<span class="text-muted">' . _l('ams_tco_mixed') . '</span>' : '<strong>' . e(app_format_money($tco['total'], $cur ?: $base)) . '</strong>'); ?>
                 </tbody>
             </table>
-            <p class="text-muted tw-text-sm"><?= _l('ams_tco_help'); ?></p>
 
             <?php if ($disposal) { ?>
             <h4 class="tw-font-semibold tw-text-base"><?= _l('ams_disposal'); ?></h4>

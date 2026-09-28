@@ -7,7 +7,7 @@ class Assets extends AdminController
     public function __construct()
     {
         parent::__construct();
-        ams_post_only(['delete', 'delete_file', 'set_cover', 'dispose', 'reinstate', 'bulk_action', 'upload_files', 'checkout', 'checkin', 'change_status']);
+        ams_post_only(['delete', 'restore', 'delete_file', 'set_cover', 'dispose', 'reinstate', 'bulk_action', 'upload_files', 'checkout', 'checkin', 'change_status']);
         $this->load->model(AMS_MODULE_NAME . '/ams_assets_model');
     }
 
@@ -23,6 +23,7 @@ class Assets extends AdminController
         $data['table']       = App_table::find('ams_assets');
         $data['statuses']    = ams_get_statuses(true);
         $data['locations']   = ams_location_options(true);
+        $data['staff']       = ams_staff_options();
         $data['status_id']   = (int) $this->input->get('status_id') ?: '';
         $data['category_id'] = (int) $this->input->get('category_id') ?: '';
 
@@ -53,10 +54,19 @@ class Assets extends AdminController
 
         if ($this->input->post()) {
             $post = $this->input->post();
-            $result = $isNew ? $this->ams_assets_model->add($post) : $this->ams_assets_model->update($id, $post);
+            // Assigning on creation is a check-out and needs that permission.
+            if ($isNew && ! empty($post['assign_type']) && staff_cant('checkout', 'ams_assets')) {
+                $result = ['success' => false, 'message' => _l('ams_no_checkout_permission')];
+            } else {
+                $result = $isNew ? $this->ams_assets_model->add($post) : $this->ams_assets_model->update($id, $post);
+            }
 
             if ($result['success']) {
                 set_alert('success', $result['message']);
+                // Allowed (some makers reuse serials), but usually a typing error: say so.
+                if ($dups = $this->ams_assets_model->serial_duplicates($post['serial_no'] ?? '', $result['id'])) {
+                    set_alert('warning', _l('ams_serial_duplicate_warning', e(implode(', ', $dups))));
+                }
                 redirect(admin_url('asset_management/assets/view/' . $result['id']));
             }
 
@@ -69,6 +79,13 @@ class Assets extends AdminController
             if (! $data['asset']) {
                 show_404();
             }
+        }
+
+        // "Clone": a new asset pre-filled from an existing one (not tag / serial / custom fields).
+        $cloneOf = $isNew && ! isset($data['posted']) ? (int) $this->input->get('clone') : 0;
+        if ($cloneOf && ($values = $this->ams_assets_model->clone_values($cloneOf))) {
+            $data['posted'] = $values;
+            set_alert('info', _l('ams_clone_prefilled'));
         }
 
         $data['title']       = $isNew ? _l('ams_new_asset') : _l('ams_edit_asset') . ' - ' . $data['asset']->asset_tag;
@@ -207,13 +224,43 @@ class Assets extends AdminController
             access_denied('ams_assets');
         }
 
-        if ($this->ams_assets_model->delete($id)) {
+        if ($this->ams_assets_model->delete($id, (string) $this->input->post('reason'))) {
             set_alert('success', _l('deleted', _l('ams_asset')));
         } else {
-            set_alert('warning', _l('problem_deleting', _l('ams_asset')));
+            set_alert('warning', $this->ams_assets_model->delete_error ?: _l('problem_deleting', _l('ams_asset')));
         }
 
         redirect(admin_url('asset_management/assets'));
+    }
+
+    // ─── Deleted assets (trash) ───────────────────────────────────────────
+
+    public function deleted()
+    {
+        if (staff_cant('delete', 'ams_assets')) {
+            access_denied('ams_assets');
+        }
+        $data['title'] = _l('ams_deleted_assets');
+        $data['table'] = App_table::find('ams_assets_deleted');
+        $this->load->view(AMS_MODULE_NAME . '/assets/deleted', $data);
+    }
+
+    public function deleted_table()
+    {
+        if (staff_cant('delete', 'ams_assets')) {
+            ajax_access_denied();
+        }
+        App_table::find('ams_assets_deleted')->output();
+    }
+
+    public function restore($id)
+    {
+        if (staff_cant('delete', 'ams_assets')) {
+            access_denied('ams_assets');
+        }
+        $result = $this->ams_assets_model->restore($id);
+        set_alert($result['success'] ? 'success' : 'warning', $result['message']);
+        redirect(admin_url($result['success'] ? 'asset_management/assets/view/' . (int) $id : 'asset_management/assets/deleted'));
     }
 
     public function bulk_action()
@@ -227,10 +274,41 @@ class Assets extends AdminController
         $updated = 0;
         $errors  = [];
 
+        $checkoutTo = (int) $this->input->post('checkout_staff');
+        $checkin    = (bool) $this->input->post('checkin');
+        $allowed    = $this->input->post('mass_delete') ? staff_can('delete', 'ams_assets')
+            : ($checkoutTo ? staff_can('checkout', 'ams_assets') : ($checkin ? staff_can('checkin', 'ams_assets') : staff_can('edit', 'ams_assets')));
+        if (! $allowed) {
+            set_alert('danger', _l('access_denied'));
+            echo json_encode(['success' => false]);
+
+            return;
+        }
+
         if ($this->input->post('mass_delete')) {
             if (staff_can('delete', 'ams_assets')) {
                 foreach ($ids as $id) {
-                    $deleted += $this->ams_assets_model->delete($id) ? 1 : 0;
+                    if ($this->ams_assets_model->delete($id)) {
+                        $deleted++;
+                    } elseif (($err = $this->ams_assets_model->delete_error) && ! in_array($err, $errors, true)) {
+                        $errors[] = $err;
+                    }
+                }
+            }
+        } elseif ($checkoutTo || $checkin) {
+            // Bulk check-out / check-in through the normal single-asset actions (same rules, history, acceptances).
+            foreach ($ids as $id) {
+                $result = $checkoutTo
+                    ? $this->ams_assets_model->checkout($id, ['assign_type' => 'staff', 'assign_id' => $checkoutTo, 'note' => (string) $this->input->post('note')])
+                    : $this->ams_assets_model->checkin($id, [
+                        // No location chosen: each asset returns to the location it has on record.
+                        'location_id' => (int) $this->input->post('location_id') ?: (int) ($this->ams_assets_model->get($id)->location_id ?? 0),
+                        'note'        => (string) $this->input->post('note'),
+                    ]);
+                if ($result['success']) {
+                    $updated++;
+                } elseif (! in_array($result['message'], $errors, true)) {
+                    $errors[] = $result['message'];
                 }
             }
         } elseif (staff_can('edit', 'ams_assets')) {
@@ -267,9 +345,11 @@ class Assets extends AdminController
         }
         if ($errors) {
             set_alert('warning', implode('<br>', array_map('e', $errors)));
+        } elseif (! $deleted && ! $updated) {
+            set_alert('warning', _l('ams_bulk_nothing_changed'));
         }
 
-        echo json_encode(['success' => true]);
+        echo json_encode(['success' => (bool) ($deleted || $updated)]);
     }
 
     // ─── Files ────────────────────────────────────────────────────────────

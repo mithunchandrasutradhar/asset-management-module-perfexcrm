@@ -101,16 +101,23 @@ class Ams_procurement_model extends App_Model
             'total'                => round(array_sum(array_map(fn ($l) => $l['qty'] * $l['unit_cost'], $lines)), 2),
         ];
 
+        // A PO made from a request must point at a real, approved request.
+        $requestId = (int) ($input['request_id'] ?? 0);
+        if (! $id && $requestId && total_rows($this->t('ams_requests'), ['id' => $requestId, 'status' => 'approved']) === 0) {
+            return ['success' => false, 'message' => _l('ams_invalid_value', _l('ams_request'))];
+        }
+
         $this->db->trans_begin();
 
         if ($id) {
-            $data['status'] = 'draft'; // editing a rejected PO sends it back to draft
+            // Editing a rejected PO sends it back to draft, without the old decision.
+            $data += ['status' => 'draft', 'approved_by' => null, 'approved_at' => null, 'decision_note' => null];
             $this->db->where('id', (int) $id)->update($this->t('ams_purchase_orders'), $data);
             $this->db->where('po_id', (int) $id)->delete($this->t('ams_po_lines'));
         } else {
             $data += [
                 'status'       => 'draft',
-                'request_id'   => (int) ($input['request_id'] ?? 0) ?: null,
+                'request_id'   => $requestId ?: null,
                 'created_by'   => get_staff_user_id() ?: null,
                 'date_created' => date('Y-m-d H:i:s'),
             ];
@@ -142,13 +149,16 @@ class Ams_procurement_model extends App_Model
         }
 
         $needsApproval = get_option('ams_po_require_approval') == '1';
-        $this->db->where('id', (int) $id)->update($this->t('ams_purchase_orders'), [
+        $this->db->where('id', (int) $id)->where('status', 'draft')->update($this->t('ams_purchase_orders'), [
             'status'       => $needsApproval ? 'pending_approval' : 'approved',
             'submitted_by' => get_staff_user_id() ?: null,
             'submitted_at' => date('Y-m-d H:i:s'),
             'approved_by'  => $needsApproval ? null : (get_staff_user_id() ?: null),
             'approved_at'  => $needsApproval ? null : date('Y-m-d H:i:s'),
         ]);
+        if ($this->db->affected_rows() !== 1) {
+            return ['success' => false, 'message' => _l('ams_po_wrong_status')];
+        }
 
         if ($needsApproval) {
             ams_notify(ams_staff_with_capability('ams_procurement', 'approve_po'), 'ams_notify_po_pending', [$po->po_number, $po->supplier_name], 'asset_management/procurement/view/' . (int) $id);
@@ -171,12 +181,15 @@ class Ams_procurement_model extends App_Model
             return ['success' => false, 'message' => _l('ams_field_required', _l('ams_req_reject_reason'))];
         }
 
-        $this->db->where('id', (int) $id)->update($this->t('ams_purchase_orders'), [
+        $this->db->where('id', (int) $id)->where('status', 'pending_approval')->update($this->t('ams_purchase_orders'), [
             'status'        => $approve ? 'approved' : 'rejected',
             'approved_by'   => get_staff_user_id() ?: null,
             'approved_at'   => date('Y-m-d H:i:s'),
             'decision_note' => $note,
         ]);
+        if ($this->db->affected_rows() !== 1) {
+            return ['success' => false, 'message' => _l('ams_po_wrong_status')];
+        }
 
         if ($po->submitted_by) {
             ams_notify([$po->submitted_by], 'ams_notify_po_decided', [$po->po_number, _l('ams_po_status_' . ($approve ? 'approved' : 'rejected'))], 'asset_management/procurement/view/' . (int) $id);
@@ -210,7 +223,7 @@ class Ams_procurement_model extends App_Model
             }
         }
 
-        $this->db->where('id', (int) $id)->update($this->t('ams_purchase_orders'), ['status' => 'sent', 'sent_at' => date('Y-m-d H:i:s')]);
+        $this->db->where('id', (int) $id)->where_in('status', ['approved', 'sent'])->update($this->t('ams_purchase_orders'), ['status' => 'sent', 'sent_at' => date('Y-m-d H:i:s')]);
         log_activity('AMS PO ' . $po->po_number . ' sent' . ($mailed ? ' by email to ' . $po->supplier_email : ''));
 
         return ['success' => true, 'message' => _l($mailed ? 'ams_po_emailed' : 'ams_po_marked_sent')];
@@ -222,7 +235,11 @@ class Ams_procurement_model extends App_Model
         if (! $po || in_array($po->status, ['received', 'cancelled', 'partially_received'])) {
             return ['success' => false, 'message' => _l('ams_po_wrong_status')];
         }
-        $this->db->where('id', (int) $id)->update($this->t('ams_purchase_orders'), ['status' => 'cancelled']);
+        $this->db->where('id', (int) $id)->where_in('status', ['draft', 'pending_approval', 'approved', 'rejected', 'sent'])
+            ->update($this->t('ams_purchase_orders'), ['status' => 'cancelled']);
+        if ($this->db->affected_rows() !== 1) {
+            return ['success' => false, 'message' => _l('ams_po_wrong_status')];
+        }
 
         return ['success' => true, 'message' => _l('ams_po_cancelled')];
     }
@@ -233,8 +250,11 @@ class Ams_procurement_model extends App_Model
         if (! $po || ! in_array($po->status, ['draft', 'rejected', 'cancelled'])) {
             return ['success' => false, 'message' => _l('ams_po_cannot_delete')];
         }
+        $this->db->trans_begin();
         $this->db->where('id', (int) $id)->delete($this->t('ams_purchase_orders'));
         $this->db->where('po_id', (int) $id)->delete($this->t('ams_po_lines'));
+        $this->db->trans_status() === false ? $this->db->trans_rollback() : $this->db->trans_commit();
+        log_activity('AMS PO ' . $po->po_number . ' deleted');
 
         return ['success' => true, 'message' => _l('deleted', _l('ams_purchase_order'))];
     }
@@ -289,6 +309,27 @@ class Ams_procurement_model extends App_Model
         $this->load->model(AMS_MODULE_NAME . '/ams_assets_model');
         $this->load->model(AMS_MODULE_NAME . '/ams_inventory_model');
         $status = ams_get_status_by_key('in_store');
+
+        // All or nothing, under a lock on the PO and its lines: a double submit (or two
+        // people) waits here and then finds the quantities already received.
+        $this->db->trans_begin();
+        $locked = $this->db->query('SELECT status FROM ' . $this->t('ams_purchase_orders') . ' WHERE id = ? FOR UPDATE', [(int) $id])->row();
+        $fresh  = [];
+        foreach ($this->db->query('SELECT id, qty, received_qty FROM ' . $this->t('ams_po_lines') . ' WHERE po_id = ? FOR UPDATE', [(int) $id])->result_array() as $l) {
+            $fresh[(int) $l['id']] = (float) $l['qty'] - (float) $l['received_qty'];
+        }
+        if (! $locked || ! in_array($locked->status, ['approved', 'sent', 'partially_received'], true)) {
+            $this->db->trans_rollback();
+
+            return ['success' => false, 'message' => _l('ams_po_wrong_status')];
+        }
+        foreach ($plan as $p) {
+            if ($p['qty'] > ($fresh[(int) $p['line']['id']] ?? 0) + 0.0001) {
+                $this->db->trans_rollback();
+
+                return ['success' => false, 'message' => _l('ams_po_receive_too_much', [e($p['line']['description']), ams_qty(max(0, $fresh[(int) $p['line']['id']] ?? 0))])];
+            }
+        }
 
         $this->db->insert($this->t('ams_goods_receipts'), [
             'po_id'        => (int) $id,
@@ -371,11 +412,15 @@ class Ams_procurement_model extends App_Model
         $got  = (float) $this->db->query('SELECT IFNULL(SUM(received_qty), 0) g FROM ' . $this->t('ams_po_lines') . ' WHERE po_id = ?', [(int) $id])->row()->g;
         $this->db->where('id', (int) $id)->update($this->t('ams_purchase_orders'), ['status' => $left <= 0.0001 ? 'received' : ($got > 0 ? 'partially_received' : $po->status)]);
 
-        log_activity('AMS PO ' . $po->po_number . ' received (receipt #' . $receiptId . ', ' . $created . ' asset(s) created)');
+        // Any failed line cancels the whole receipt, so the form can simply be corrected and sent again.
+        if ($errors || $this->db->trans_status() === false) {
+            $this->db->trans_rollback();
 
-        if ($errors) {
-            return ['success' => false, 'message' => _l('ams_po_received_with_errors') . '<br>' . implode('<br>', $errors)];
+            return ['success' => false, 'message' => _l('ams_po_receipt_not_saved') . '<br>' . implode('<br>', $errors ?: [_l('ams_db_error')])];
         }
+        $this->db->trans_commit();
+
+        log_activity('AMS PO ' . $po->po_number . ' received (receipt #' . $receiptId . ', ' . $created . ' asset(s) created)');
 
         return ['success' => true, 'message' => _l('ams_po_received', $created)];
     }

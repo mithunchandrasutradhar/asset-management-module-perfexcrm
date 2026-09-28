@@ -17,6 +17,30 @@ class Ams_assets_model extends App_Model
 
     private $intFields = ['category_id', 'brand_id', 'model_id', 'supplier_id', 'gifted_by_id', 'purchased_by', 'currency', 'department_id'];
 
+    /**
+     * Form values for "Clone": everything of an existing asset except what must be
+     * unique (tag, serial number). Dates in display format, as the form posts them.
+     */
+    public function clone_values($id)
+    {
+        $asset = $this->db->where('id', (int) $id)->where('is_deleted', 0)->get($this->t('ams_assets'))->row_array();
+        if (! $asset) {
+            return null;
+        }
+        $values = [];
+        foreach ($this->editable as $field) {
+            if (in_array($field, ['asset_tag', 'serial_no'], true)) {
+                continue;
+            }
+            $value          = $asset[$field] ?? null;
+            $values[$field] = in_array($field, $this->dateFields, true) ? ($value ? _d($value) : '') : (string) ($value ?? '');
+        }
+        $values['status_id']   = '';
+        $values['location_id'] = (string) ($asset['location_id'] ?? '');
+
+        return $values;
+    }
+
     private function t($table)
     {
         return db_prefix() . $table;
@@ -103,6 +127,27 @@ class Ams_assets_model extends App_Model
         return null;
     }
 
+    /** Tags of other (not deleted) assets with the same serial number. */
+    public function serial_duplicates($serial, $exceptId = null)
+    {
+        $serial = trim((string) $serial);
+        if ($serial === '') {
+            return [];
+        }
+        $this->db->select('asset_tag')->where('serial_no', $serial)->where('is_deleted', 0);
+        if ($exceptId) {
+            $this->db->where('id !=', (int) $exceptId);
+        }
+
+        return array_column($this->db->get($this->t('ams_assets'))->result_array(), 'asset_tag');
+    }
+
+    /** Tags go into QR links (scan/tag/TAG) and Code 128 barcodes: letters, digits, . _ - only. */
+    public function valid_tag($tag)
+    {
+        return (bool) preg_match('/^[A-Za-z0-9._-]{1,64}$/', (string) $tag);
+    }
+
     public function tag_exists($tag, $exceptId = null)
     {
         $this->db->where('asset_tag', $tag);
@@ -156,6 +201,9 @@ class Ams_assets_model extends App_Model
         }
 
         $manualTag = trim($input['asset_tag'] ?? '');
+        if ($manualTag !== '' && ! $this->valid_tag($manualTag)) {
+            return ['success' => false, 'message' => _l('ams_tag_invalid_chars')];
+        }
         if ($manualTag !== '' && $this->tag_exists($manualTag)) {
             return ['success' => false, 'message' => _l('ams_tag_exists', e($manualTag))];
         }
@@ -229,6 +277,9 @@ class Ams_assets_model extends App_Model
         if ($tag === '') {
             return ['success' => false, 'message' => _l('ams_field_required', _l('ams_asset_tag'))];
         }
+        if ($tag !== $old['asset_tag'] && ! $this->valid_tag($tag)) {
+            return ['success' => false, 'message' => _l('ams_tag_invalid_chars')];
+        }
         if ($this->tag_exists($tag, $id)) {
             return ['success' => false, 'message' => _l('ams_tag_exists', e($tag))];
         }
@@ -236,7 +287,12 @@ class Ams_assets_model extends App_Model
 
         $changes = [];
         foreach ($data as $field => $value) {
-            if ((string) ($old[$field] ?? '') !== (string) ($value ?? '')) {
+            $was = $old[$field] ?? null;
+            // DECIMAL columns come back as "1200.00": compare numbers as numbers.
+            if (is_numeric($was) && is_numeric($value) && abs((float) $was - (float) $value) < 0.005) {
+                continue;
+            }
+            if ((string) ($was ?? '') !== (string) ($value ?? '')) {
                 $changes[$field] = [$this->display_value($field, $old[$field]), $this->display_value($field, $value)];
             }
         }
@@ -335,6 +391,9 @@ class Ams_assets_model extends App_Model
             $data['currency'] = get_base_currency()->id;
         }
 
+        if ($data['purchase_cost'] !== null && $data['purchase_cost'] < 0) {
+            return ['error' => _l('ams_negative_not_allowed')];
+        }
         if ($data['salvage_value'] !== null && ($data['salvage_value'] < 0 || ($data['purchase_cost'] !== null && $data['salvage_value'] > $data['purchase_cost']))) {
             return ['error' => _l('ams_dep_salvage_above_cost')];
         }
@@ -449,7 +508,8 @@ class Ams_assets_model extends App_Model
 
         $this->db->trans_begin();
 
-        $this->db->where('id', (int) $id)->update($this->t('ams_assets'), [
+        // Conditional update: a second, simultaneous check-out finds the asset taken.
+        $this->db->where('id', (int) $id)->where('assigned_type IS NULL', null, false)->update($this->t('ams_assets'), [
             'status_id'        => $assigned['id'],
             'assigned_type'    => $type,
             'assigned_id'      => $assignId,
@@ -461,6 +521,11 @@ class Ams_assets_model extends App_Model
             'updated_by'       => get_staff_user_id(),
             'date_updated'     => $now,
         ]);
+        if ($this->db->affected_rows() !== 1) {
+            $this->db->trans_rollback();
+
+            return ['success' => false, 'message' => _l('ams_already_checked_out')];
+        }
 
         $this->add_history($id, [
             'action'           => 'checkout',
@@ -521,7 +586,7 @@ class Ams_assets_model extends App_Model
 
         $this->db->trans_begin();
 
-        $this->db->where('id', (int) $id)->update($this->t('ams_assets'), [
+        $this->db->where('id', (int) $id)->where('assigned_type IS NOT NULL', null, false)->update($this->t('ams_assets'), [
             'status_id'        => $status['id'],
             'assigned_type'    => null,
             'assigned_id'      => null,
@@ -533,6 +598,11 @@ class Ams_assets_model extends App_Model
             'updated_by'       => get_staff_user_id(),
             'date_updated'     => $now,
         ]);
+        if ($this->db->affected_rows() !== 1) {
+            $this->db->trans_rollback();
+
+            return ['success' => false, 'message' => _l('ams_not_checked_out')];
+        }
 
         $this->add_history($id, [
             'action'             => 'checkin',
@@ -585,8 +655,25 @@ class Ams_assets_model extends App_Model
             return ['success' => false, 'message' => _l('ams_no_dispose_permission')];
         }
 
+        // Archiving and un-archiving go through the disposal workflow only, so the
+        // disposal record, book value and closed jobs / seats always match the status.
+        $action   = $input['_history_action'] ?? '';
+        $disposed = total_rows($this->t('ams_disposals'), ['asset_id' => (int) $id]) > 0;
+        if ($status['type'] === 'archived' && $action !== 'dispose') {
+            return ['success' => false, 'message' => _l('ams_status_use_dispose_only')];
+        }
+        if ($disposed && $action !== 'reinstate') {
+            return ['success' => false, 'message' => _l('ams_status_disposed_use_reinstate')];
+        }
+
         $note       = trim($input['note'] ?? '');
         $locationId = (int) ($input['location_id'] ?? 0) ?: $asset->location_id;
+        if ($locationId && (int) $locationId !== (int) $asset->location_id && total_rows($this->t('ams_locations'), ['id' => (int) $locationId]) === 0) {
+            return ['success' => false, 'message' => _l('ams_not_found')];
+        }
+        if (! empty($input['asset_condition']) && ! in_array($input['asset_condition'], array_column(ams_condition_options(), 'id'), true)) {
+            unset($input['asset_condition']);
+        }
 
         if ($status['requires_location'] && ! $locationId) {
             return ['success' => false, 'message' => _l('ams_status_requires_location', e($status['name']))];
@@ -596,7 +683,11 @@ class Ams_assets_model extends App_Model
         }
 
         $endsAssignment = in_array($status['type'], ['archived', 'deployable']) && $asset->assigned_type;
-        $now            = date('Y-m-d H:i:s');
+        // Ending an assignment is a check-in: it needs that permission (disposal has its own).
+        if ($endsAssignment && $action !== 'dispose' && staff_cant('checkin', 'ams_assets')) {
+            return ['success' => false, 'message' => _l('ams_no_checkin_permission')];
+        }
+        $now = date('Y-m-d H:i:s');
 
         $update = [
             'status_id'    => $status['id'],
@@ -650,6 +741,11 @@ class Ams_assets_model extends App_Model
         if (! $asset || ! $locationId || (int) $asset->location_id === (int) $locationId) {
             return false;
         }
+        // Assigned to a location = the assignment is the location; archived assets stay put.
+        if ($asset->assigned_type === 'location' || $asset->status_type === 'archived'
+            || total_rows($this->t('ams_locations'), ['id' => (int) $locationId]) === 0) {
+            return false;
+        }
 
         $this->db->where('id', (int) $id)->update($this->t('ams_assets'), [
             'location_id'  => (int) $locationId,
@@ -668,13 +764,34 @@ class Ams_assets_model extends App_Model
         return true;
     }
 
-    /** Soft delete: the row and its history stay for traceability; the tag stays reserved. */
+    /** Why the last delete() was refused (shown to the user). */
+    public $delete_error = '';
+
+    /**
+     * Soft delete: the row and its history stay for traceability; the tag stays reserved.
+     * A checked-out asset must be checked in first. Running work is closed like on
+     * disposal: open jobs cancelled, schedules stopped, licence seats and pending
+     * acceptances released.
+     */
     public function delete($id, $reason = '')
     {
-        $asset = $this->get($id);
+        $this->delete_error = '';
+        $asset              = $this->get($id);
         if (! $asset) {
+            $this->delete_error = _l('ams_not_found');
+
             return false;
         }
+        if ($asset->assigned_type) {
+            $this->delete_error = _l('ams_delete_checked_out', e($asset->asset_tag));
+
+            return false;
+        }
+
+        $this->load->model(AMS_MODULE_NAME . '/ams_disposal_model');
+        $this->load->model(AMS_MODULE_NAME . '/ams_people_model');
+
+        $this->db->trans_begin();
 
         $this->db->where('id', (int) $id)->update($this->t('ams_assets'), [
             'is_deleted'     => 1,
@@ -682,13 +799,49 @@ class Ams_assets_model extends App_Model
             'deleted_by'     => get_staff_user_id(),
             'date_deleted'   => date('Y-m-d H:i:s'),
         ]);
+        $this->ams_disposal_model->close_related($id);
+        $this->ams_people_model->cancel_pending('asset', $id);
 
         $this->add_history($id, ['action' => 'delete', 'status_from' => $asset->status_id, 'note' => $reason ?: null]);
         $this->audit($id, 'delete', ['asset_tag' => [$asset->asset_tag, null], 'name' => [$asset->name, null]]);
+
+        if ($this->db->trans_status() === false) {
+            $this->db->trans_rollback();
+            $this->delete_error = _l('ams_db_error');
+
+            return false;
+        }
+        $this->db->trans_commit();
+
         log_activity('AMS asset deleted [ID: ' . $id . ', Tag: ' . $asset->asset_tag . ']');
         hooks()->do_action('ams_after_asset_deleted', $id);
 
         return true;
+    }
+
+    /**
+     * Undo a delete. The asset comes back in its last status and location, unassigned;
+     * jobs, schedules and seats closed on delete stay closed (re-create them if needed).
+     */
+    public function restore($id)
+    {
+        $asset = $this->db->where('id', (int) $id)->where('is_deleted', 1)->get($this->t('ams_assets'))->row();
+        if (! $asset) {
+            return ['success' => false, 'message' => _l('ams_not_found')];
+        }
+        $this->db->where('id', (int) $id)->where('is_deleted', 1)->update($this->t('ams_assets'), [
+            'is_deleted'     => 0,
+            'deleted_reason' => null,
+            'deleted_by'     => null,
+            'date_deleted'   => null,
+            'updated_by'     => get_staff_user_id(),
+            'date_updated'   => date('Y-m-d H:i:s'),
+        ]);
+        $this->add_history($id, ['action' => 'restore', 'status_to' => $asset->status_id, 'note' => _l('ams_restored_note')]);
+        $this->audit($id, 'restore', ['asset_tag' => [null, $asset->asset_tag]]);
+        log_activity('AMS asset restored [ID: ' . (int) $id . ', Tag: ' . $asset->asset_tag . ']');
+
+        return ['success' => true, 'message' => _l('ams_asset_restored', e($asset->asset_tag))];
     }
 
     // ─── History / audit ──────────────────────────────────────────────────
@@ -856,16 +1009,23 @@ class Ams_assets_model extends App_Model
             return false;
         }
 
+        // Database first (one transaction), the file only once that is committed.
+        $this->db->trans_begin();
+        $this->db->where('id', (int) $fileId)->delete($this->t('ams_asset_files'));
+        $this->db->where('id', (int) $file->asset_id)->where('cover_file_id', (int) $fileId)
+            ->update($this->t('ams_assets'), ['cover_file_id' => null]);
+        $this->add_history($file->asset_id, ['action' => 'files', 'note' => _l('ams_history_file_deleted', $file->original_name)]);
+        if ($this->db->trans_status() === false) {
+            $this->db->trans_rollback();
+
+            return false;
+        }
+        $this->db->trans_commit();
+
         $path = ams_asset_upload_dir($file->asset_id) . $file->file_name;
         if (is_file($path)) {
             @unlink($path);
         }
-
-        $this->db->where('id', (int) $fileId)->delete($this->t('ams_asset_files'));
-        $this->db->where('id', (int) $file->asset_id)->where('cover_file_id', (int) $fileId)
-            ->update($this->t('ams_assets'), ['cover_file_id' => null]);
-
-        $this->add_history($file->asset_id, ['action' => 'files', 'note' => _l('ams_history_file_deleted', $file->original_name)]);
 
         return true;
     }

@@ -21,7 +21,7 @@ foreach ($forecast['by_month'] as $cur => $values) {
 <div id="wrapper">
     <div class="content">
         <div class="tw-flex tw-flex-wrap tw-justify-between tw-items-center tw-mb-3 tw-gap-2">
-            <h4 class="tw-my-0 tw-font-bold tw-text-xl"><a href="<?= admin_url('asset_management/reports'); ?>" class="tw-text-neutral-500"><?= _l('ams_reports'); ?></a> › <?= _l('ams_report_depreciation'); ?></h4>
+            <h4 class="tw-my-0 tw-font-bold tw-text-xl"><a href="<?= admin_url('asset_management/reports'); ?>" class="tw-text-neutral-500"><?= _l('ams_reports'); ?></a> › <?= _l('ams_report_depreciation') . ams_help_icon(_l('ams_report_depreciation_help')); ?></h4>
             <form method="get" class="tw-flex tw-gap-2 tw-items-center">
                 <label class="tw-mb-0"><?= _l('ams_report_next_months'); ?></label>
                 <select name="months" class="form-control" style="width:auto" onchange="this.form.submit()">
@@ -73,7 +73,6 @@ foreach ($forecast['by_month'] as $cur => $values) {
                             } ?>
                     </tbody>
                 </table>
-                <p class="text-muted tw-text-sm tw-mt-3 tw-mb-0"><?= _l('ams_report_depreciation_help'); ?></p>
             </div>
         </div>
         <?php } ?>

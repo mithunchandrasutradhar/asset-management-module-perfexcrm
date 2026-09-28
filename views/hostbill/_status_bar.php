@@ -9,7 +9,7 @@ $last       = get_option('ams_hb_last_sync');
 <div class="alert alert-warning">
     <?= _l(! $configured ? 'ams_hb_not_configured' : 'ams_hb_not_enabled'); ?>
     <?php if (is_admin() || staff_can('edit', 'ams_settings')) { ?>
-    <a href="<?= admin_url('settings?group=ams_hostbill'); ?>" class="alert-link tw-ml-1"><?= _l('ams_hb_open_settings'); ?></a>
+    <a href="<?= admin_url('asset_management/configuration/index/hostbill'); ?>" class="alert-link tw-ml-1"><?= _l('ams_hb_open_settings'); ?></a>
     <?php } ?>
 </div>
 <?php } elseif ($last) { ?>

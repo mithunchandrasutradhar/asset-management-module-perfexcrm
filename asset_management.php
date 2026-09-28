@@ -16,7 +16,7 @@ define('AMS_MODULE_NAME', 'asset_management');
 // re-runs the (idempotent) installer on the next admin page load, so updated
 // module files never run against a stale schema and no manual
 // deactivate/reactivate is needed.
-define('AMS_SCHEMA_VERSION', 6);
+define('AMS_SCHEMA_VERSION', 8);
 
 define('AMS_UPLOAD_PATH', FCPATH . 'uploads/asset_management/');
 
@@ -25,14 +25,13 @@ define('AMS_UPLOAD_PATH', FCPATH . 'uploads/asset_management/');
 hooks()->add_action('admin_init', 'ams_ensure_schema');
 hooks()->add_action('admin_init', 'ams_register_permissions');
 hooks()->add_action('admin_init', 'ams_init_menu_items');
-hooks()->add_action('admin_init', 'ams_register_settings_section');
 hooks()->add_action('admin_init', 'ams_register_tables');
 hooks()->add_action('after_custom_fields_select_options', 'ams_custom_fields_select_option');
 hooks()->add_filter('before_single_setting_updated_in_loop', 'ams_encode_array_settings');
+hooks()->add_filter('after_parse_email_template_message', 'ams_plain_mail_subject');
+hooks()->add_action('after_cron_run', 'ams_ensure_schema', 1); // before the module's cron jobs
 hooks()->add_action('after_cron_run', 'ams_cron_verify_stock_levels');
 hooks()->add_action('after_cron_run', 'ams_cron_hostbill_sync');
-hooks()->add_action('ams_stock_committed', 'ams_hostbill_after_stock_change');
-hooks()->add_action('admin_init', 'ams_register_customer_tab');
 
 // People workflows (acceptances, requests, overdue, staff lifecycle, email)
 hooks()->add_action('ams_after_asset_checkout', 'ams_people_on_asset_checkout');
@@ -53,6 +52,7 @@ hooks()->add_action('ams_setup_saved', 'ams_finance_on_setup_saved');
 hooks()->add_action('after_cron_run', 'ams_cron_depreciation');
 hooks()->add_action('app_admin_footer', 'ams_staff_profile_shortcut');
 hooks()->add_action('app_admin_footer', 'ams_post_links_script');
+hooks()->add_action('app_admin_footer', 'ams_keep_menu_open_script');
 
 register_merge_fields(AMS_MODULE_NAME . '/merge_fields/ams_merge_fields');
 hooks()->add_filter('get_dashboard_widgets', 'ams_register_dashboard_widgets');
@@ -74,14 +74,32 @@ function ams_activation_hook()
     update_option('ams_schema_version', AMS_SCHEMA_VERSION);
 }
 
+/**
+ * Upgrades the database after a module update: on admin page loads and before the
+ * module's cron jobs. A lock makes sure only one request runs install.php.
+ */
 function ams_ensure_schema()
 {
     if ((int) get_option('ams_schema_version') >= AMS_SCHEMA_VERSION) {
         return;
     }
 
-    require_once __DIR__ . '/install.php';
-    update_option('ams_schema_version', AMS_SCHEMA_VERSION);
+    $CI   = &get_instance();
+    $lock = 'ams_schema_' . md5((string) $CI->db->database);
+    if ((int) $CI->db->query('SELECT GET_LOCK(?, 30) l', [$lock])->row()->l !== 1) {
+        return;
+    }
+    try {
+        // Another request may have finished the upgrade while this one waited.
+        $CI->db->where('name', 'ams_schema_version');
+        $current = (int) ($CI->db->get(db_prefix() . 'options')->row()->value ?? 0);
+        if ($current < AMS_SCHEMA_VERSION) {
+            require_once __DIR__ . '/install.php';
+            update_option('ams_schema_version', AMS_SCHEMA_VERSION);
+        }
+    } finally {
+        $CI->db->query('SELECT RELEASE_LOCK(?)', [$lock]);
+    }
 }
 
 function ams_uninstall_hook()
@@ -91,7 +109,7 @@ function ams_uninstall_hook()
 
 function ams_module_action_links($actions)
 {
-    $actions[] = '<a href="' . admin_url('settings?group=ams') . '">' . _l('settings') . '</a>';
+    $actions[] = '<a href="' . admin_url('asset_management/configuration') . '">' . _l('settings') . '</a>';
 
     return $actions;
 }
@@ -227,201 +245,74 @@ function ams_register_permissions()
 }
 
 // ─── Menu ─────────────────────────────────────────────────────────────────
+// Everything lives under the "Assets" sidebar item, ordered in blocks (Perfex has one
+// level of sub-items): self-service · assets · operations · inventory · HostBill · administration.
 
 function ams_init_menu_items()
 {
     $CI = &get_instance();
 
-    $canAssets    = staff_can('view', 'ams_assets') || staff_can('view_own', 'ams_assets');
+    $canAssetsAll = staff_can('view', 'ams_assets');
+    $canAssets    = $canAssetsAll || staff_can('view_own', 'ams_assets');
     $itemKinds    = array_filter(array_keys(ams_item_kinds()), 'ams_item_can_view_kind_page');
-    $canInventory = (bool) $itemKinds;
+    $canStockAll  = (bool) ams_item_viewable_kinds();
     $canHostbill  = staff_can('view', 'ams_hostbill');
-    $canMine      = ams_can_use_my_assets();
-    $canRequests  = ams_can_see_requests_page();
-    $canMt        = staff_can('view', 'ams_maintenance');
-    $canLic       = staff_can('view', 'ams_licenses');
-    $canPo        = staff_can('view', 'ams_procurement');
-    $canAudits    = staff_can('view', 'ams_audits');
-    $canReports   = staff_can('view', 'ams_reports');
+    $canSetup     = staff_can('view', 'ams_setup');
+    $canSettings  = ams_can_view_settings();
 
-    if ($canAssets || $canInventory || $canHostbill || $canMine || $canRequests || $canMt || $canLic || $canPo || $canAudits || $canReports) {
-        $home = $canAssets ? 'asset_management' : ($canInventory ? 'asset_management/inventory/index/' . reset($itemKinds) : ($canHostbill ? 'asset_management/hostbill/orders' : ($canMine ? 'asset_management/my_assets' : ($canRequests ? 'asset_management/requests' : ($canMt ? 'asset_management/maintenance' : ($canLic ? 'asset_management/licenses' : ($canPo ? 'asset_management/procurement' : ($canAudits ? 'asset_management/audits' : 'asset_management/reports'))))))));
-        $CI->app_menu->add_sidebar_menu_item('ams', [
-            'name'     => _l('ams_menu_assets'),
-            'icon'     => 'fa-solid fa-laptop',
-            'href'     => admin_url($home),
-            'position' => 16,
-        ]);
-    }
-
-    if ($canMine) {
-        $CI->app_menu->add_sidebar_children_item('ams', [
-            'slug'     => 'ams-my-assets',
-            'name'     => _l('ams_my_assets'),
-            'href'     => admin_url('asset_management/my_assets'),
-            'position' => 0,
-        ]);
-    }
-    if ($canRequests) {
-        $CI->app_menu->add_sidebar_children_item('ams', [
-            'slug'     => 'ams-requests',
-            'name'     => _l('ams_requests'),
-            'href'     => admin_url('asset_management/requests'),
-            'position' => 4,
-        ]);
-    }
-    if (staff_can('view', 'ams_assets')) {
-        $CI->app_menu->add_sidebar_children_item('ams', [
-            'slug'     => 'ams-people',
-            'name'     => _l('ams_assets_by_staff'),
-            'href'     => admin_url('asset_management/people'),
-            'position' => 5,
-        ]);
-    }
-
-    foreach ([
-        ['ok' => $canMt, 'slug' => 'ams-maintenance', 'name' => 'ams_maintenance', 'href' => 'asset_management/maintenance', 'pos' => 6],
-        ['ok' => $canLic, 'slug' => 'ams-licenses', 'name' => 'ams_licenses', 'href' => 'asset_management/licenses', 'pos' => 7],
-        ['ok' => $canPo, 'slug' => 'ams-procurement', 'name' => 'ams_purchase_orders', 'href' => 'asset_management/procurement', 'pos' => 8],
-        ['ok' => $canAudits, 'slug' => 'ams-audits', 'name' => 'ams_audits', 'href' => 'asset_management/audits', 'pos' => 9],
-        ['ok' => $canReports, 'slug' => 'ams-reports', 'name' => 'ams_reports', 'href' => 'asset_management/reports', 'pos' => 24],
-        ['ok' => ams_can_import(), 'slug' => 'ams-import', 'name' => 'ams_import', 'href' => 'asset_management/import', 'pos' => 26],
-    ] as $m) {
-        if ($m['ok']) {
-            $CI->app_menu->add_sidebar_children_item('ams', [
-                'slug'     => $m['slug'],
-                'name'     => _l($m['name']),
-                'href'     => admin_url($m['href']),
-                'position' => $m['pos'],
-            ]);
-        }
-    }
-
-    if ($canHostbill) {
-        $CI->app_menu->add_sidebar_children_item('ams', [
-            'slug'     => 'ams-hb-orders',
-            'name'     => _l('ams_hb_menu_orders'),
-            'href'     => admin_url('asset_management/hostbill/orders'),
-            'position' => 30,
-        ]);
-        $CI->app_menu->add_sidebar_children_item('ams', [
-            'slug'     => 'ams-hb-products',
-            'name'     => _l('ams_hb_menu_products'),
-            'href'     => admin_url('asset_management/hostbill/products'),
-            'position' => 31,
-        ]);
-        $CI->app_menu->add_sidebar_children_item('ams', [
-            'slug'     => 'ams-hb-log',
-            'name'     => _l('ams_hb_menu_log'),
-            'href'     => admin_url('asset_management/hostbill/log'),
-            'position' => 32,
-        ]);
-    }
-
-    $position = 10;
+    $items = [
+        // Self-service
+        [ams_can_use_my_assets(), 'ams-my-assets', 'ams_my_assets', 'asset_management/my_assets'],
+        // Assets
+        [$canAssets, 'ams-dashboard', 'ams_menu_dashboard', 'asset_management'],
+        [$canAssets, 'ams-assets', 'ams_menu_asset_list', 'asset_management/assets'],
+        [$canAssetsAll, 'ams-people', 'ams_assets_by_staff', 'asset_management/people'],
+        [ams_can_see_requests_page(), 'ams-requests', 'ams_requests', 'asset_management/requests'],
+        [staff_can('view', 'ams_audits'), 'ams-audits', 'ams_audits', 'asset_management/audits'],
+        // Operations
+        [staff_can('view', 'ams_maintenance'), 'ams-maintenance', 'ams_maintenance', 'asset_management/maintenance'],
+        [staff_can('view', 'ams_licenses'), 'ams-licenses', 'ams_licenses', 'asset_management/licenses'],
+        [staff_can('view', 'ams_procurement'), 'ams-procurement', 'ams_purchase_orders', 'asset_management/procurement'],
+        [$canAssetsAll, 'ams-purchases', 'ams_menu_purchases', 'asset_management/purchases'],
+    ];
+    // Inventory
     foreach ($itemKinds as $kind) {
-        $CI->app_menu->add_sidebar_children_item('ams', [
-            'slug'     => 'ams-inventory-' . $kind,
-            'name'     => _l(ams_item_kinds()[$kind]['plural']),
-            'href'     => admin_url('asset_management/inventory/index/' . $kind),
-            'position' => $position++,
-        ]);
+        $items[] = [true, 'ams-inventory-' . $kind, ams_item_kinds()[$kind]['plural'], 'asset_management/inventory/index/' . $kind];
     }
-    if (ams_item_viewable_kinds()) {
-        $CI->app_menu->add_sidebar_children_item('ams', [
-            'slug'     => 'ams-stock-levels',
-            'name'     => _l('ams_stock_levels'),
-            'href'     => admin_url('asset_management/inventory/levels'),
-            'position' => 20,
-        ]);
-        $CI->app_menu->add_sidebar_children_item('ams', [
-            'slug'     => 'ams-stock-movements',
-            'name'     => _l('ams_stock_movements'),
-            'href'     => admin_url('asset_management/inventory/movements'),
-            'position' => 21,
-        ]);
-    }
+    $items = array_merge($items, [
+        [$canStockAll, 'ams-stock-levels', 'ams_stock_levels', 'asset_management/inventory/levels'],
+        [$canStockAll, 'ams-stock-movements', 'ams_stock_movements', 'asset_management/inventory/movements'],
+        // HostBill
+        [$canHostbill, 'ams-hb-inventory', 'ams_hb_inventory', 'asset_management/hostbill'],
+        // Administration
+        [staff_can('view', 'ams_reports'), 'ams-reports', 'ams_reports', 'asset_management/reports'],
+        [ams_can_import(), 'ams-import', 'ams_import', 'asset_management/import'],
+        // Setup = master data + department approvers + module settings (tabs, each by permission).
+        [$canSetup || $canSettings, 'ams-setup', 'ams_menu_setup', $canSetup ? 'asset_management/setup/index/categories' : 'asset_management/configuration'],
+    ]);
 
-    if ($canAssets) {
-        $CI->app_menu->add_sidebar_children_item('ams', [
-            'slug'     => 'ams-dashboard',
-            'name'     => _l('ams_menu_dashboard'),
-            'href'     => admin_url('asset_management'),
-            'position' => 1,
-        ]);
-
-        $CI->app_menu->add_sidebar_children_item('ams', [
-            'slug'     => 'ams-assets',
-            'name'     => _l('ams_menu_asset_list'),
-            'href'     => admin_url('asset_management/assets'),
-            'position' => 2,
-        ]);
-
-        if (staff_can('view', 'ams_assets')) {
-            $CI->app_menu->add_sidebar_children_item('ams', [
-                'slug'     => 'ams-purchases',
-                'name'     => _l('ams_menu_purchases'),
-                'href'     => admin_url('asset_management/purchases'),
-                'position' => 3,
-            ]);
-        }
-    }
-
-    // Master data lives in the standard Perfex "Setup" menu, like core masters.
-    if (staff_can('view', 'ams_setup')) {
-        $CI->app_menu->add_setup_menu_item('ams-setup', [
-            'name'     => _l('ams_setup_menu'),
-            'collapse' => true,
-            'position' => 60,
-        ]);
-
-        $position = 1;
-        foreach (ams_setup_entities() as $entity => $cfg) {
-            $CI->app_menu->add_setup_children_item('ams-setup', [
-                'slug'     => 'ams-setup-' . $entity,
-                'name'     => _l($cfg['plural']),
-                'href'     => admin_url('asset_management/setup/index/' . $entity),
-                'position' => $position++,
-            ]);
-        }
-        $CI->app_menu->add_setup_children_item('ams-setup', [
-            'slug'     => 'ams-setup-approvers',
-            'name'     => _l('ams_department_approvers'),
-            'href'     => admin_url('asset_management/approvers'),
-            'position' => $position,
-        ]);
-    }
-}
-
-// ─── Settings (Setup → Settings → Asset Management) ───────────────────────
-
-function ams_register_settings_section()
-{
-    if (! is_admin() && staff_cant('edit', 'ams_settings')) {
+    $items = array_values(array_filter($items, fn ($i) => $i[0]));
+    if (! $items) {
         return;
     }
 
-    $CI = &get_instance();
-    $CI->app->add_settings_section('ams', [
-        'title'    => _l('ams_settings_section'),
-        'position' => 45,
-        'children' => [
-            [
-                'id'       => 'ams',
-                'name'     => _l('ams_settings_general'),
-                'view'     => AMS_MODULE_NAME . '/settings',
-                'position' => 1,
-                'icon'     => 'fa-solid fa-laptop',
-            ],
-            [
-                'id'       => 'ams_hostbill',
-                'name'     => _l('ams_hb_settings_tab'),
-                'view'     => AMS_MODULE_NAME . '/settings_hostbill',
-                'position' => 2,
-                'icon'     => 'fa-solid fa-cart-shopping',
-            ],
-        ],
+    // The parent opens the first page the staff member may use.
+    $home = $canAssets ? 'asset_management' : $items[0][3];
+    $CI->app_menu->add_sidebar_menu_item('ams', [
+        'name'     => _l('ams_menu_assets'),
+        'icon'     => 'fa-solid fa-laptop',
+        'href'     => admin_url($home),
+        'position' => 16,
     ]);
+
+    foreach ($items as $position => $i) {
+        $CI->app_menu->add_sidebar_children_item('ams', [
+            'slug'     => $i[1],
+            'name'     => _l($i[2]),
+            'href'     => admin_url($i[3]),
+            'position' => $position + 1,
+        ]);
+    }
 }
 
 // ─── Custom fields (Setup → Custom Fields → "Belongs to") ─────────────────
@@ -464,7 +355,7 @@ function ams_encode_array_settings($hookData)
     return $hookData;
 }
 
-/** Scheduled HostBill order sync (runs on Perfex cron, every "sync interval" minutes). */
+/** Scheduled HostBill inventory refresh + low-stock check (Perfex cron, every "refresh interval" minutes). */
 function ams_cron_hostbill_sync()
 {
     if (get_option('ams_hb_enabled') != '1' || get_option('ams_hb_sync_enabled') != '1') {
@@ -479,40 +370,7 @@ function ams_cron_hostbill_sync()
 
     $CI = &get_instance();
     $CI->load->model(AMS_MODULE_NAME . '/ams_hostbill_model');
-    $CI->ams_hostbill_model->sync();
-}
-
-/** After any committed stock change: flag mapped HostBill products and optionally push now. */
-function ams_hostbill_after_stock_change($itemIds)
-{
-    if (! $itemIds || get_option('ams_hb_enabled') != '1') {
-        return;
-    }
-
-    $CI = &get_instance();
-    $CI->load->model(AMS_MODULE_NAME . '/ams_hostbill_model');
-    $CI->ams_hostbill_model->mark_push_pending($itemIds);
-
-    if (get_option('ams_hb_push_immediately') == '1') {
-        $CI->ams_hostbill_model->push_pending($itemIds);
-    }
-}
-
-/** Customer profile → "Hardware Orders" (HostBill orders matched by contact email). */
-function ams_register_customer_tab()
-{
-    if (! staff_can('view', 'ams_hostbill')) {
-        return;
-    }
-
-    $CI = &get_instance();
-    $CI->app_tabs->add_customer_profile_tab('ams_hostbill_orders', [
-        'name'     => _l('ams_hb_customer_tab'),
-        'icon'     => 'fa-solid fa-box',
-        'view'     => AMS_MODULE_NAME . '/hostbill/customer_tab',
-        'position' => 95,
-        'badge'    => [],
-    ]);
+    $CI->ams_hostbill_model->refresh();
 }
 
 /**
@@ -565,8 +423,7 @@ function ams_register_tables()
         'ams_movements'   => ['db' => 'ams_stock_movements', 'view' => 'tables/movements', 'cf' => null],
         'ams_levels'      => ['db' => 'ams_stock_levels', 'view' => 'tables/levels', 'cf' => null],
         'ams_checkouts'   => ['db' => 'ams_item_checkouts', 'view' => 'tables/checkouts', 'cf' => null],
-        'ams_hb_orders'   => ['db' => 'ams_hb_orders', 'view' => 'tables/hb_orders', 'cf' => null],
-        'ams_hb_mappings' => ['db' => 'ams_hb_product_map', 'view' => 'tables/hb_mappings', 'cf' => null],
+        'ams_hb_inventory' => ['db' => 'ams_hb_products', 'view' => 'tables/hb_inventory', 'cf' => null, 'pk' => 'hb_product_id'],
         'ams_hb_log'      => ['db' => 'ams_hb_sync_log', 'view' => 'tables/hb_log', 'cf' => null],
         'ams_acceptances' => ['db' => 'ams_acceptances', 'view' => 'tables/acceptances', 'cf' => null],
         'ams_requests'    => ['db' => 'ams_requests', 'view' => 'tables/requests', 'cf' => null],
@@ -583,6 +440,8 @@ function ams_register_tables()
         'ams_audit_lines' => ['db' => 'ams_audit_lines', 'view' => 'tables/audit_lines', 'cf' => null],
         'ams_history_all' => ['db' => 'ams_asset_history', 'view' => 'tables/history_all', 'cf' => null],
         'ams_warranty'    => ['db' => 'ams_assets', 'view' => 'tables/warranty', 'cf' => null],
+        'ams_assets_deleted' => ['db' => 'ams_assets', 'view' => 'tables/assets_deleted', 'cf' => null],
+        'ams_setup_log'   => ['db' => 'ams_audit_log', 'view' => 'tables/setup_log', 'cf' => null],
     ];
 
     foreach (ams_setup_entities() as $entity => $cfg) {
@@ -765,8 +624,7 @@ function ams_email_templates_section()
 function ams_post_links_script()
 {
     $CI = &get_instance();
-    $settings = $CI->uri->segment(2) === 'settings' && strpos((string) $CI->input->get('group'), 'ams') === 0;
-    if ($CI->uri->segment(2) !== AMS_MODULE_NAME && ! $settings) {
+    if ($CI->uri->segment(2) !== AMS_MODULE_NAME) {
         return;
     } ?>
 <script>
@@ -777,6 +635,74 @@ function ams_post_links_script()
             form.append($('<input type="hidden">').attr('name', csrfData.token_name).val(csrfData.hash));
         }
         form.appendTo('body').trigger('submit');
+    });
+</script>
+<?php
+}
+
+/**
+ * Perfex only opens a sidebar group when the URL equals one of its links. On every
+ * module page (asset view, PO page, other Setup tabs...) keep "Assets" open and
+ * highlight the closest sub-item: page aliases first, then the longest link prefix.
+ */
+function ams_keep_menu_open_script()
+{
+    $CI = &get_instance();
+    if ($CI->uri->segment(2) !== AMS_MODULE_NAME) {
+        return;
+    }
+
+    // Pages whose URL is not under their menu item's link.
+    $aliases = [
+        'setup'         => 'ams-setup',
+        'approvers'     => 'ams-setup',
+        'configuration' => 'ams-setup',
+        'hostbill'      => 'ams-hb-inventory',
+        'scan'          => 'ams-assets',
+        'legacy_import' => 'ams-setup',
+    ]; ?>
+<script>
+    $(function() {
+        var li = $('#side-menu > li.menu-item-ams');
+        if (!li.length) {
+            return;
+        }
+        li.addClass('active');
+        li.children('a').attr('aria-expanded', 'true');
+        li.children('ul.nav-second-level').addClass('in').attr('aria-expanded', 'true').css('height', '');
+
+        if (li.find('ul.nav-second-level > li.active').length) {
+            return; // Perfex already matched the exact link
+        }
+        var base = <?= json_encode(admin_url(AMS_MODULE_NAME . '/'), JSON_UNESCAPED_SLASHES | JSON_HEX_TAG); ?>;
+        var here = (location.origin + location.pathname).replace(/\/+$/, '');
+        var path = here.indexOf(base) === 0 ? here.substring(base.length) : '';
+        var aliases = <?= json_encode($aliases, JSON_UNESCAPED_SLASHES | JSON_HEX_TAG); ?>;
+        var target = path === '' ? li.find('li.sub-menu-item-ams-dashboard') : null;
+
+        // Alias "x" matches x and x/...; alias "x/" matches anything starting with x/.
+        $.each(aliases, function(prefix, slug) {
+            var stem = prefix.replace(/\/$/, '');
+            var hit = prefix !== stem ? path.indexOf(prefix) === 0 : (path === stem || path.indexOf(stem + '/') === 0);
+            if (!target && hit) {
+                target = li.find('li.sub-menu-item-' + slug);
+            }
+        });
+        if (!target || !target.length) {
+            var best = null, bestLen = 0;
+            li.find('ul.nav-second-level > li > a').each(function() {
+                var href = (this.href || '').replace(/\/+$/, '');
+                // The dashboard link (module root) is a prefix of everything: exact match only.
+                if (href.length > bestLen && href !== base.replace(/\/+$/, '') && (here === href || here.indexOf(href + '/') === 0)) {
+                    best = $(this).parent();
+                    bestLen = href.length;
+                }
+            });
+            target = best;
+        }
+        if (target && target.length) {
+            target.addClass('active');
+        }
     });
 </script>
 <?php
@@ -802,4 +728,17 @@ function ams_staff_profile_shortcut()
     });
 </script>
 <?php
+}
+
+/**
+ * Merge values are HTML-escaped for the email body; a subject is plain text, so
+ * show "Dell & Co", not "Dell &amp; Co" (only this module's templates).
+ */
+function ams_plain_mail_subject($template)
+{
+    if (is_object($template) && ($template->type ?? '') === 'ams' && isset($template->subject)) {
+        $template->subject = html_entity_decode(strip_tags(str_replace(['<br />', '<br>'], ' ', (string) $template->subject)), ENT_QUOTES, 'UTF-8');
+    }
+
+    return $template;
 }

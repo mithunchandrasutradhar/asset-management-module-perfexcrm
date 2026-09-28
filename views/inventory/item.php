@@ -59,12 +59,11 @@ $qtyVal = fn ($field) => $v($field) === '' ? '' : ams_qty($v($field));
                             <input type="checkbox" name="active" id="active" value="1" <?= $checked('active', true) ? 'checked' : ''; ?>>
                             <label for="active"><?= _l('ams_active'); ?></label>
                         </div>
-                        <?php if ($kind === 'stock') { ?>
+                        <?php if ($kind === 'stock' && get_option('ams_item_sellable_enabled') == '1') { ?>
                         <div class="checkbox checkbox-primary">
                             <input type="checkbox" name="is_sellable" id="is_sellable" value="1" <?= $checked('is_sellable', true) ? 'checked' : ''; ?>>
-                            <label for="is_sellable"><?= _l('ams_is_sellable'); ?></label>
+                            <label for="is_sellable"><?= _l('ams_is_sellable') . ams_help_icon(_l('ams_is_sellable_help')); ?></label>
                         </div>
-                        <p class="text-muted tw-text-sm"><?= _l('ams_is_sellable_help'); ?></p>
                         <?php } ?>
                     </div>
                 </div>
@@ -84,13 +83,12 @@ $qtyVal = fn ($field) => $v($field) === '' ? '' : ams_qty($v($field));
                                 <?php } ?>
                             </div>
                             <div class="col-md-6">
-                                <?= render_input('reorder_level', 'ams_reorder_level', $qtyVal('reorder_level'), 'number', ['step' => '0.01', 'min' => '0']); ?>
+                                <?= render_input('reorder_level', ams_label_help('ams_reorder_level', _l('ams_reorder_help')), $qtyVal('reorder_level'), 'number', ['step' => '0.01', 'min' => '0']); ?>
                             </div>
                             <div class="col-md-6">
                                 <?= render_input('reorder_qty', 'ams_reorder_qty', $qtyVal('reorder_qty'), 'number', ['step' => '0.01', 'min' => '0']); ?>
                             </div>
                         </div>
-                        <p class="text-muted tw-text-sm -tw-mt-2"><?= _l('ams_reorder_help'); ?></p>
                         <?= render_select('default_location_id', $locations, ['id', 'name'], 'ams_default_location', $v('default_location_id')); ?>
                     </div>
                 </div>
@@ -98,7 +96,7 @@ $qtyVal = fn ($field) => $v($field) === '' ? '' : ams_qty($v($field));
                 <?php if ($isNew) { ?>
                 <div class="panel_s">
                     <div class="panel-body">
-                        <h4 class="tw-mt-0 tw-font-semibold tw-text-lg tw-mb-4"><?= _l('ams_opening_stock'); ?></h4>
+                        <h4 class="tw-mt-0 tw-font-semibold tw-text-lg tw-mb-4"><?= _l('ams_opening_stock') . ams_help_icon(_l('ams_opening_stock_help')); ?></h4>
                         <div class="row">
                             <div class="col-md-5">
                                 <?= render_input('opening_qty', 'ams_quantity', $v('opening_qty'), 'number', ['step' => '0.01', 'min' => '0']); ?>
@@ -107,7 +105,6 @@ $qtyVal = fn ($field) => $v($field) === '' ? '' : ams_qty($v($field));
                                 <?= render_select('opening_location_id', $locations, ['id', 'name'], 'ams_location', $v('opening_location_id')); ?>
                             </div>
                         </div>
-                        <p class="text-muted tw-text-sm -tw-mt-2"><?= _l('ams_opening_stock_help'); ?></p>
                     </div>
                 </div>
                 <?php } ?>

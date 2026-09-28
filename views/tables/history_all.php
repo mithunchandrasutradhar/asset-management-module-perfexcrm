@@ -72,7 +72,7 @@ return App_table::find('ams_history_all')
         return $output;
     })->setRules([
         App_table_filter::new('action', 'MultiSelectRule')->label(_l('ams_action'))->options(function () {
-            return collect(['create', 'checkout', 'checkin', 'status', 'move', 'edit', 'files', 'accepted', 'declined', 'transfer', 'maintenance', 'license', 'dispose', 'reinstate', 'audit', 'delete'])
+            return collect(['create', 'checkout', 'checkin', 'status', 'move', 'edit', 'files', 'accepted', 'declined', 'transfer', 'maintenance', 'license', 'dispose', 'reinstate', 'audit', 'delete', 'restore'])
                 ->map(fn ($a) => ['value' => $a, 'label' => _l('ams_action_' . $a)])->all();
         }),
         App_table_filter::new('date_created', 'DateRule')->label(_l('ams_date')),

@@ -248,7 +248,7 @@ class Ams_finance_model extends App_Model
         $maint = (float) $this->db->query('SELECT IFNULL(SUM(cost), 0) c FROM ' . $this->t('ams_maintenance') . ' WHERE asset_id = ? AND status = "completed"', [(int) $asset->id])->row()->c;
         $lic   = (float) $this->db->query('SELECT IFNULL(SUM(l.purchase_cost / GREATEST(l.seats, 1)), 0) c
             FROM ' . $this->t('ams_license_seats') . ' s JOIN ' . $this->t('ams_licenses') . ' l ON l.id = s.license_id
-            WHERE s.assigned_type = "asset" AND s.assigned_id = ? AND l.purchase_cost IS NOT NULL', [(int) $asset->id])->row()->c;
+            WHERE s.assigned_type = "asset" AND s.assigned_id = ? AND s.released_at IS NULL AND l.purchase_cost IS NOT NULL', [(int) $asset->id])->row()->c;
 
         $purchase = $asset->purchase_cost !== null ? (float) $asset->purchase_cost : 0.0;
         $base     = get_base_currency();

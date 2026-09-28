@@ -62,13 +62,17 @@ class Ams_disposal_model extends App_Model
         $methodLabel = _l('ams_disp_method_' . $method);
         $note        = trim(_l('ams_disp_history', $methodLabel) . ' ' . trim((string) ($input['reason'] ?? '')));
 
-        // Status change first: it checks the "dispose" permission and ends any assignment.
+        // One transaction: status change (checks "dispose", ends any assignment), the
+        // disposal record and the closing of jobs / seats all happen, or none of them.
+        $this->db->trans_begin();
         $r = $this->ams_assets_model->change_status($assetId, [
             'status_id'       => $status['id'],
             'note'            => $note,
             '_history_action' => 'dispose',
         ]);
         if (! $r['success']) {
+            $this->db->trans_rollback();
+
             return $r;
         }
 
@@ -90,6 +94,12 @@ class Ams_disposal_model extends App_Model
         ]);
 
         $this->close_related($assetId);
+        if ($this->db->trans_status() === false) {
+            $this->db->trans_rollback();
+
+            return ['success' => false, 'message' => _l('ams_db_error')];
+        }
+        $this->db->trans_commit();
         $this->ams_finance_model->recalculate([$assetId]);
 
         log_activity('AMS asset disposed [Tag: ' . $asset->asset_tag . ', Method: ' . $method . ', Proceeds: ' . ($proceeds ?? '-') . ']');
@@ -99,7 +109,7 @@ class Ams_disposal_model extends App_Model
     }
 
     /** Disposed assets keep no running work: cancel open jobs, stop schedules, free licence seats. */
-    private function close_related($assetId)
+    public function close_related($assetId)
     {
         $this->load->model(AMS_MODULE_NAME . '/ams_maintenance_model');
         $open = $this->db->select('id')->where('asset_id', (int) $assetId)->where_in('status', ['scheduled', 'in_progress'])->get($this->t('ams_maintenance'))->result_array();
@@ -134,6 +144,7 @@ class Ams_disposal_model extends App_Model
             return ['success' => false, 'message' => _l('ams_field_required', _l('ams_location'))];
         }
 
+        $this->db->trans_begin();
         $r = $this->ams_assets_model->change_status($assetId, [
             'status_id'       => $inStore['id'] ?? 0,
             'location_id'     => $location,
@@ -141,10 +152,18 @@ class Ams_disposal_model extends App_Model
             '_history_action' => 'reinstate',
         ]);
         if (! $r['success']) {
+            $this->db->trans_rollback();
+
             return $r;
         }
 
         $this->db->where('id', (int) $disposal->id)->delete($this->t('ams_disposals'));
+        if ($this->db->trans_status() === false) {
+            $this->db->trans_rollback();
+
+            return ['success' => false, 'message' => _l('ams_db_error')];
+        }
+        $this->db->trans_commit();
         $this->ams_finance_model->recalculate([$assetId]);
         log_activity('AMS asset disposal reversed [Tag: ' . $asset->asset_tag . ']');
 

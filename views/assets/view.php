@@ -62,9 +62,11 @@ if ($a->source === 'gift') {
                         </a>
                         <?php } ?>
                         <?php if ($canEdit) { ?>
+                        <?php if (! $disposal) { ?>
                         <a href="#" class="btn btn-default" data-toggle="modal" data-target="#ams_status_modal">
                             <i class="fa-solid fa-arrows-rotate tw-mr-1"></i><?= _l('ams_change_status'); ?>
                         </a>
+                        <?php } ?>
                         <a href="<?= admin_url('asset_management/assets/asset/' . $a->id); ?>" class="btn btn-default">
                             <i class="fa-regular fa-pen-to-square tw-mr-1"></i><?= _l('edit'); ?>
                         </a>
@@ -82,8 +84,13 @@ if ($a->source === 'gift') {
                             <i class="fa-solid fa-rotate-left tw-mr-1"></i><?= _l('ams_disp_reinstate'); ?>
                         </a>
                         <?php } ?>
+                        <?php if (staff_can('create', 'ams_assets')) { ?>
+                        <a href="<?= admin_url('asset_management/assets/asset?clone=' . $a->id); ?>" class="btn btn-default" data-toggle="tooltip" data-title="<?= _l('ams_clone_help'); ?>">
+                            <i class="fa-regular fa-copy tw-mr-1"></i><?= _l('ams_clone'); ?>
+                        </a>
+                        <?php } ?>
                         <?php if (staff_can('delete', 'ams_assets')) { ?>
-                        <a href="<?= admin_url('asset_management/assets/delete/' . $a->id); ?>" class="btn btn-danger _delete">
+                        <a href="#" class="btn btn-danger" data-toggle="modal" data-target="#ams_delete_modal">
                             <i class="fa-regular fa-trash-can"></i>
                         </a>
                         <?php } ?>
@@ -169,7 +176,8 @@ if ($a->source === 'gift') {
                                                 <?= $detail('ams_warranty_notes', nl2br(e($a->warranty_notes))); ?>
                                                 <?php foreach ($a->custom_fields as $field) {
                                                     $value = get_custom_field_value($a->id, $field['id'], 'ams_assets');
-                                                    echo $detail($field['name'], $value);
+                                                    // Staff-typed text: escaped (link fields render their own anchor).
+                                                    echo $detail(e($field['name']), $field['type'] === 'link' ? $value : nl2br(e((string) $value)));
                                                 } ?>
                                                 <?= $detail('ams_notes', nl2br(e($a->notes))); ?>
                                                 <?php if ($canMt && $maintenance_cost > 0) { ?>
@@ -270,7 +278,7 @@ if ($a->source === 'gift') {
                                 <div class="tw-flex tw-flex-wrap tw-items-center tw-gap-2">
                                     <input type="file" name="files[]" multiple class="form-control" style="max-width:420px" required>
                                     <button type="submit" class="btn btn-primary"><i class="fa-solid fa-upload tw-mr-1"></i><?= _l('ams_upload'); ?></button>
-                                    <span class="text-muted tw-text-sm"><?= _l('ams_upload_help', get_option('ams_max_upload_mb')); ?></span>
+                                    <?= ams_help_icon(_l('ams_upload_help', get_option('ams_max_upload_mb'))); ?>
                                 </div>
                                 <?= form_close(); ?>
                                 <?php } ?>
@@ -337,8 +345,7 @@ if ($a->source === 'gift') {
                     <?= render_select('assign_id_location', $locations, ['id', 'name'], 'ams_assign_type_location'); ?>
                 </div>
                 <div class="ams-assign-dept-override">
-                    <?= render_select('department_id', $deptOptions, ['id', 'name'], 'ams_department_cost_centre'); ?>
-                    <p class="text-muted tw-text-sm -tw-mt-2"><?= _l('ams_department_default_help'); ?></p>
+                    <?= render_select('department_id', $deptOptions, ['id', 'name'], ams_label_help('ams_department_cost_centre', _l('ams_department_default_help'))); ?>
                 </div>
                 <div class="row">
                     <div class="col-md-6">
@@ -387,6 +394,35 @@ if ($a->source === 'gift') {
 </div>
 <?php } ?>
 
+<?php if (staff_can('delete', 'ams_assets')) { ?>
+<div class="modal fade" id="ams_delete_modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <?= form_open(admin_url('asset_management/assets/delete/' . $a->id)); ?>
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <h4 class="modal-title"><?= _l('delete'); ?> - <?= e($a->asset_tag); ?></h4>
+            </div>
+            <div class="modal-body">
+                <?php if ($a->assigned_type) { ?>
+                <p class="text-warning"><i class="fa-solid fa-triangle-exclamation tw-mr-1"></i><?= _l('ams_delete_checked_out', e($a->asset_tag)); ?></p>
+                <?php } else { ?>
+                <p><?= _l('ams_delete_explain'); ?></p>
+                <?= render_textarea('reason', ams_label_help('ams_delete_reason', _l('ams_delete_reason_help')), '', ['rows' => 2]); ?>
+                <?php } ?>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal"><?= _l('close'); ?></button>
+                <?php if (! $a->assigned_type) { ?>
+                <button type="submit" class="btn btn-danger"><?= _l('delete'); ?></button>
+                <?php } ?>
+            </div>
+        </div>
+        <?= form_close(); ?>
+    </div>
+</div>
+<?php } ?>
+
 <?php if ($canEdit) { ?>
 <div class="modal fade" id="ams_status_modal" tabindex="-1" role="dialog">
     <div class="modal-dialog" role="document">
@@ -398,9 +434,10 @@ if ($a->source === 'gift') {
             </div>
             <div class="modal-body">
                 <?php
-                $canDispose     = staff_can('dispose', 'ams_assets');
-                $statusChoices  = array_values(array_filter($statuses, function ($s) use ($a, $canDispose) {
-                    return $s['type'] !== 'deployed' && (int) $s['id'] !== (int) $a->status_id && ($canDispose || $s['type'] !== 'archived');
+                // Archived statuses are only reached through Dispose (records the disposal).
+                $mayDispose    = staff_can('dispose', 'ams_assets');
+                $statusChoices = array_values(array_filter($statuses, function ($s) use ($a) {
+                    return ! in_array($s['type'], ['deployed', 'archived'], true) && (int) $s['id'] !== (int) $a->status_id;
                 }));
                 ?>
                 <div class="form-group">
@@ -416,8 +453,8 @@ if ($a->source === 'gift') {
                 <?php if ($a->assigned_type) { ?>
                 <p class="text-warning tw-text-sm ams-ends-assignment hide"><i class="fa-solid fa-triangle-exclamation tw-mr-1"></i><?= _l('ams_status_ends_assignment'); ?></p>
                 <?php } ?>
-                <?php if ($canDispose) { ?>
-                <p class="text-info tw-text-sm ams-use-dispose hide"><i class="fa-solid fa-circle-info tw-mr-1"></i><?= _l('ams_status_use_dispose'); ?></p>
+                <?php if ($mayDispose) { ?>
+                <p class="text-info tw-text-sm"><i class="fa-solid fa-circle-info tw-mr-1"></i><?= _l('ams_status_use_dispose'); ?></p>
                 <?php } ?>
                 <?= render_select('location_id', $locations, ['id', 'name'], 'ams_location', $a->location_id); ?>
                 <?= render_select('asset_condition', ams_condition_options(), ['id', 'name'], 'ams_condition', $a->asset_condition); ?>
@@ -450,20 +487,17 @@ if ($a->source === 'gift') {
                 </div>
                 <div class="row">
                     <div class="col-md-6"><?= render_date_input('disposal_date', 'ams_disp_date', _d(date('Y-m-d'))); ?></div>
-                    <div class="col-md-6"><?= render_input('proceeds', _l('ams_disp_proceeds') . ($a->currency_name ? ' (' . e($a->currency_name) . ')' : ''), '', 'number', ['step' => '0.01', 'min' => 0]); ?></div>
+                    <div class="col-md-6"><?= render_input('proceeds', _l('ams_disp_proceeds') . ($a->currency_name ? ' (' . e($a->currency_name) . ')' : '')
+                        . (($depreciation['applicable'] || $a->purchase_cost !== null) ? ams_help_icon(_l('ams_disp_book_value_hint', app_format_money($depreciation['book_value'] ?? 0, $a->currency_name))) : ''), '', 'number', ['step' => '0.01', 'min' => 0]); ?></div>
                 </div>
                 <div class="row">
                     <div class="col-md-6"><?= render_input('recipient', 'ams_disp_recipient'); ?></div>
                     <div class="col-md-6"><?= render_input('reference', 'ams_disp_reference'); ?></div>
                 </div>
                 <?= render_textarea('reason', 'ams_reason'); ?>
-                <?php if ($depreciation['applicable'] || $a->purchase_cost !== null) { ?>
-                <p class="text-muted tw-text-sm"><?= _l('ams_disp_book_value_hint', e(app_format_money($depreciation['book_value'] ?? 0, $a->currency_name))); ?></p>
-                <?php } ?>
                 <?php if ($a->assigned_type) { ?>
                 <p class="text-warning tw-text-sm"><i class="fa-solid fa-triangle-exclamation tw-mr-1"></i><?= _l('ams_status_ends_assignment'); ?></p>
                 <?php } ?>
-                <p class="text-muted tw-text-sm"><?= _l('ams_disp_side_effects'); ?></p>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-default" data-dismiss="modal"><?= _l('close'); ?></button>
@@ -485,7 +519,6 @@ if ($a->source === 'gift') {
                 <h4 class="modal-title"><?= _l('ams_disp_reinstate'); ?> - <?= e($a->asset_tag); ?></h4>
             </div>
             <div class="modal-body">
-                <p><?= _l('ams_disp_reinstate_help'); ?></p>
                 <?= render_select('location_id', $locations, ['id', 'name'], '<small class="req text-danger">* </small>' . _l('ams_location'), $a->location_id); ?>
                 <?= render_textarea('note', 'ams_note'); ?>
             </div>

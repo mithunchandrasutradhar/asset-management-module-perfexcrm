@@ -14,6 +14,9 @@
                         </a>
                         <?php } ?>
                         <a href="<?= admin_url('asset_management/scan'); ?>" class="btn btn-default"><i class="fa-solid fa-qrcode tw-mr-1"></i><?= _l('ams_scan'); ?></a>
+                        <?php if (staff_can('delete', 'ams_assets')) { ?>
+                        <a href="<?= admin_url('asset_management/assets/deleted'); ?>" class="btn btn-default"><i class="fa-regular fa-trash-can tw-mr-1"></i><?= _l('ams_deleted_assets'); ?></a>
+                        <?php } ?>
                         <div id="vueApp" class="tw-inline pull-right tw-ml-0 sm:tw-ml-1.5 rtl:tw-mr-1.5 rtl:tw-ml-0">
                             <app-filters id="<?= $table->id(); ?>"
                                 view="<?= $table->viewName(); ?>"
@@ -105,19 +108,32 @@
                 </div>
                 <hr class="mass_delete_separator" />
                 <?php } ?>
+                <?php if (staff_can('checkout', 'ams_assets') || staff_can('checkin', 'ams_assets')) { ?>
+                <div id="ams_bulk_assign">
+                    <?php if (staff_can('checkout', 'ams_assets')) { ?>
+                    <?= render_select('ams_bulk_checkout_staff', array_map(fn ($s) => ['id' => $s['staffid'], 'name' => $s['firstname'] . ' ' . $s['lastname']], $staff), ['id', 'name'], ams_label_help('ams_bulk_checkout_to', _l('ams_bulk_checkout_help'))); ?>
+                    <?php } ?>
+                    <?php if (staff_can('checkin', 'ams_assets')) { ?>
+                    <div class="checkbox checkbox-primary">
+                        <input type="checkbox" id="ams_bulk_checkin">
+                        <label for="ams_bulk_checkin"><?= _l('ams_bulk_checkin') . ams_help_icon(_l('ams_bulk_checkin_help')); ?></label>
+                    </div>
+                    <?php } ?>
+                </div>
+                <hr />
+                <?php } ?>
                 <?php if (staff_can('edit', 'ams_assets')) { ?>
                 <div id="ams_bulk_change">
-                    <?= render_select('ams_bulk_status', array_values(array_filter($statuses, fn ($s) => $s['type'] !== 'deployed')), ['id', 'name'], 'ams_change_status_to'); ?>
+                    <?= render_select('ams_bulk_status', array_values(array_filter($statuses, fn ($s) => ! in_array($s['type'], ['deployed', 'archived'], true))), ['id', 'name'], ams_label_help('ams_change_status_to', _l('ams_bulk_help'))); ?>
                     <?= render_select('ams_bulk_location', $locations, ['id', 'name'], 'ams_move_to_location'); ?>
                     <?= render_textarea('ams_bulk_note', 'ams_note'); ?>
-                    <p class="text-muted tw-text-sm"><?= _l('ams_bulk_help'); ?></p>
                 </div>
                 <?php } ?>
             </div>
             <div class="modal-footer">
                 <a href="#" class="btn btn-default pull-left" onclick="ams_bulk_labels(); return false;"><i class="fa-solid fa-qrcode tw-mr-1"></i><?= _l('ams_print_labels_selected'); ?></a>
                 <button type="button" class="btn btn-default" data-dismiss="modal"><?= _l('close'); ?></button>
-                <?php if (staff_can('edit', 'ams_assets') || staff_can('delete', 'ams_assets')) { ?>
+                <?php if (staff_can('edit', 'ams_assets') || staff_can('delete', 'ams_assets') || staff_can('checkout', 'ams_assets') || staff_can('checkin', 'ams_assets')) { ?>
                 <a href="#" class="btn btn-primary" onclick="ams_bulk_action(this); return false;"><?= _l('confirm'); ?></a>
                 <?php } ?>
             </div>
@@ -163,6 +179,13 @@
                 return;
             }
             data.mass_delete = true;
+        } else if ($('#ams_bulk_checkout_staff').length && $('#ams_bulk_checkout_staff').selectpicker('val')) {
+            data.checkout_staff = $('#ams_bulk_checkout_staff').selectpicker('val');
+            data.note = $('#ams_bulk_note').val() || '';
+        } else if ($('#ams_bulk_checkin').prop('checked')) {
+            data.checkin = 1;
+            data.location_id = $('#ams_bulk_location').selectpicker('val') || '';
+            data.note = $('#ams_bulk_note').val() || '';
         } else {
             data.status_id = $('#ams_bulk_status').selectpicker('val') || '';
             data.location_id = $('#ams_bulk_location').selectpicker('val') || '';

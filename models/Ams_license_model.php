@@ -79,9 +79,25 @@ class Ams_license_model extends App_Model
             'active'        => ! empty($input['active']) ? 1 : 0,
         ];
 
+        foreach (['purchase_cost', 'renewal_cost'] as $f) {
+            $raw = str_replace([',', ' '], '', trim((string) ($input[$f] ?? '')));
+            if ($raw !== '' && (! is_numeric($raw) || (float) $raw < 0)) {
+                return ['success' => false, 'message' => _l('ams_negative_not_allowed')];
+            }
+        }
+        if ($data['purchase_date'] && $data['expiry_date'] && $data['expiry_date'] < $data['purchase_date']) {
+            return ['success' => false, 'message' => _l('ams_lic_expiry_before_purchase')];
+        }
+        if ($data['supplier_id'] && total_rows($this->t('ams_suppliers'), ['id' => $data['supplier_id']]) === 0) {
+            return ['success' => false, 'message' => _l('ams_invalid_value', _l('ams_supplier'))];
+        }
+
         // Key: encrypted; an empty field on edit keeps the current key. Only key-viewers may change it.
         $key = trim((string) ($input['license_key'] ?? ''));
-        if ($key !== '' && (! $id || staff_can('view_keys', 'ams_licenses'))) {
+        if ($id && ! empty($input['clear_key']) && $key === '' && staff_can('view_keys', 'ams_licenses')) {
+            $data['license_key'] = null;
+            log_activity('AMS licence key cleared [#' . (int) $id . ']');
+        } elseif ($key !== '' && (! $id || staff_can('view_keys', 'ams_licenses'))) {
             $this->load->library('encryption');
             $data['license_key'] = $this->encryption->encrypt($key);
         } elseif (! $id) {
@@ -119,8 +135,11 @@ class Ams_license_model extends App_Model
         if ($lic->seats_used > 0) {
             return ['success' => false, 'message' => _l('ams_lic_has_seats')];
         }
+        // Released seats are the history of who / what used the licence: keep it.
+        if (total_rows($this->t('ams_license_seats'), ['license_id' => (int) $id]) > 0) {
+            return ['success' => false, 'message' => _l('ams_lic_has_seat_history')];
+        }
         $this->db->where('id', (int) $id)->delete($this->t('ams_licenses'));
-        $this->db->where('license_id', (int) $id)->delete($this->t('ams_license_seats'));
         log_activity('AMS licence deleted [' . $lic->name . ']');
 
         return ['success' => true, 'message' => _l('deleted', _l('ams_license'))];
@@ -155,7 +174,8 @@ class Ams_license_model extends App_Model
         if ($type === 'staff' && total_rows($this->t('staff'), ['staffid' => $id, 'active' => 1]) === 0) {
             return ['success' => false, 'message' => _l('ams_select_recipient')];
         }
-        if ($type === 'asset' && total_rows($this->t('ams_assets'), ['id' => $id, 'is_deleted' => 0]) === 0) {
+        if ($type === 'asset' && (int) $this->db->query('SELECT COUNT(*) c FROM ' . $this->t('ams_assets') . ' a JOIN ' . $this->t('ams_statuses') . ' st ON st.id = a.status_id
+                WHERE a.id = ? AND a.is_deleted = 0 AND st.type <> "archived"', [$id])->row()->c === 0) {
             return ['success' => false, 'message' => _l('ams_select_recipient')];
         }
         if (! in_array($type, ['staff', 'asset'])) {
@@ -165,6 +185,14 @@ class Ams_license_model extends App_Model
             return ['success' => false, 'message' => _l('ams_lic_already_assigned')];
         }
 
+        // Re-count under a lock on the licence row: two quick assignments can't exceed the seats.
+        $this->db->trans_begin();
+        $this->db->query('SELECT id FROM ' . $this->t('ams_licenses') . ' WHERE id = ? FOR UPDATE', [(int) $licenseId]);
+        if ($this->seats_used($licenseId) >= (int) $lic->seats) {
+            $this->db->trans_rollback();
+
+            return ['success' => false, 'message' => _l('ams_lic_no_free_seats')];
+        }
         $this->db->insert($this->t('ams_license_seats'), [
             'license_id'    => (int) $licenseId,
             'assigned_type' => $type,
@@ -173,6 +201,7 @@ class Ams_license_model extends App_Model
             'assigned_by'   => get_staff_user_id() ?: null,
             'assigned_at'   => date('Y-m-d H:i:s'),
         ]);
+        $this->db->trans_commit();
 
         if ($type === 'staff') {
             ams_notify([$id], 'ams_notify_license_assigned', [$lic->name], 'asset_management/my_assets');
@@ -237,6 +266,8 @@ class Ams_license_model extends App_Model
             WHERE active = 1 AND expiry_date IS NOT NULL AND expiry_date <= ? AND (reminded_for IS NULL OR reminded_for <> expiry_date)', [$until])->result_array();
 
         foreach ($rows as $l) {
+            // Mark first: a crash while sending must not send the same reminder again.
+            $this->db->where('id', (int) $l['id'])->update($this->t('ams_licenses'), ['reminded_for' => $l['expiry_date']]);
             $details = $l['auto_renew'] ? _l('ams_lic_auto_renews') : _l('ams_lic_renew_needed');
             ams_notify(ams_manager_recipients(), 'ams_notify_license_expiring', [$l['name'], _d($l['expiry_date'])], 'asset_management/licenses/view/' . (int) $l['id']);
             foreach (ams_manager_recipients() as $staffId) {
@@ -247,7 +278,6 @@ class Ams_license_model extends App_Model
                     '{ams_link}'     => admin_url('asset_management/licenses/view/' . (int) $l['id']),
                 ]);
             }
-            $this->db->where('id', (int) $l['id'])->update($this->t('ams_licenses'), ['reminded_for' => $l['expiry_date']]);
         }
 
         return count($rows);

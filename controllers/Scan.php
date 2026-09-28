@@ -13,35 +13,66 @@ class Scan extends AdminController
     public function __construct()
     {
         parent::__construct();
+        ams_post_only(['record']);
         $this->load->model(AMS_MODULE_NAME . '/ams_audit_model');
+        if (! ams_can_view_assets() && staff_cant('edit', 'ams_audits')) {
+            access_denied('ams_assets');
+        }
     }
 
     public function index()
     {
-        if (! ams_can_view_assets() && staff_cant('edit', 'ams_audits')) {
-            access_denied('ams_assets');
-        }
-
         if (($code = trim((string) $this->input->get('code'))) !== '') {
-            $this->resolve($code);
+            $this->resolve($code, $this->direct_navigation());
         }
 
-        $data['title']      = _l('ams_scan');
-        $data['scan_audit'] = $this->active_audit();
-        $this->load->view(AMS_MODULE_NAME . '/scan/index', $data);
+        $this->show();
     }
 
     public function tag($tag = '')
     {
-        $this->resolve(rawurldecode((string) $tag));
+        $this->resolve(rawurldecode((string) $tag), $this->direct_navigation());
     }
 
-    private function resolve($code)
+    /** POST from the confirm button (browsers that don't tell how the scan URL was opened). */
+    public function record()
+    {
+        $this->resolve(trim((string) $this->input->post('code')), true);
+    }
+
+    private function show($confirm = null, $code = '')
+    {
+        $data['title']         = _l('ams_scan');
+        $data['scan_audit']    = $this->active_audit();
+        $data['confirm_asset'] = $confirm;
+        $data['confirm_code']  = $code;
+        $this->load->view(AMS_MODULE_NAME . '/scan/index', $data);
+    }
+
+    /**
+     * True when the browser says the URL was opened directly (camera / scanner / typed,
+     * or a click by the user) - not loaded by an image or frame in some page. Recording
+     * into an audit changes data, so anything else gets a confirm button (POST).
+     */
+    private function direct_navigation()
+    {
+        $dest = $_SERVER['HTTP_SEC_FETCH_DEST'] ?? '';
+        $site = $_SERVER['HTTP_SEC_FETCH_SITE'] ?? '';
+        $user = $_SERVER['HTTP_SEC_FETCH_USER'] ?? '';
+
+        return $dest === 'document' && ($site === 'none' || $user === '?1');
+    }
+
+    private function resolve($code, $direct = false)
     {
         $asset = $this->ams_audit_model->find_asset_by_code($code);
 
         $audit = $this->active_audit();
         if ($audit) {
+            if ($asset && ! $direct) {
+                $this->show($asset, $code);
+                exit;
+            }
             if (! $asset) {
                 set_alert('danger', _l('ams_audit_code_unknown') . ': ' . e($code));
             } else {

@@ -4,8 +4,7 @@
     <div class="content">
         <div class="row">
             <div class="col-md-12">
-                <h4 class="tw-mt-0 tw-font-bold tw-text-xl tw-mb-3"><?= _l('ams_hb_sync_log'); ?></h4>
-                <?php $this->load->view(AMS_MODULE_NAME . '/hostbill/_status_bar'); ?>
+                <?php $this->load->view(AMS_MODULE_NAME . '/hostbill/_header', ['tab' => 'log']); ?>
                 <div class="tw-mb-2 tw-flex tw-justify-end">
                     <div id="vueApp">
                         <app-filters id="<?= $table->id(); ?>" view="<?= $table->viewName(); ?>"
@@ -45,6 +44,7 @@
 </div>
 
 <?php init_tail(); ?>
+<?php $this->load->view(AMS_MODULE_NAME . '/hostbill/_post_js'); ?>
 <script>
     $(function() {
         initDataTable('.table-ams-hb-log', admin_url + 'asset_management/hostbill/log_table', [], [], {}, [0, 'desc']);

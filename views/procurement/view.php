@@ -18,7 +18,7 @@ $canDecide  = staff_can('approve_po', 'ams_procurement') && $po->status === 'pen
                         <?php if ($canEdit && in_array($po->status, ['draft', 'rejected'])) { ?>
                         <a href="<?= admin_url('asset_management/procurement/po/' . $po->id); ?>" class="btn btn-default"><i class="fa-regular fa-pen-to-square tw-mr-1"></i><?= _l('edit'); ?></a>
                         <?php } ?>
-                        <?php if (staff_can('create', 'ams_procurement') && $po->status === 'draft') { ?>
+                        <?php if ((staff_can('create', 'ams_procurement') || $canEdit) && $po->status === 'draft') { ?>
                         <button class="btn btn-primary ams-po-post" data-url="<?= admin_url('asset_management/procurement/submit/' . $po->id); ?>"><i class="fa-solid fa-paper-plane tw-mr-1"></i><?= _l(get_option('ams_po_require_approval') == '1' ? 'ams_po_submit_approval' : 'ams_po_approve_now'); ?></button>
                         <?php } ?>
                         <?php if ($canEdit && in_array($po->status, ['approved', 'sent'])) { ?>
@@ -139,7 +139,7 @@ $canDecide  = staff_can('approve_po', 'ams_procurement') && $po->status === 'pen
         <div class="modal-content">
             <div class="modal-header">
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-                <h4 class="modal-title"><?= _l('ams_po_receive'); ?> - <?= e($po->po_number); ?></h4>
+                <h4 class="modal-title"><?= _l('ams_po_receive'); ?> - <?= e($po->po_number) . ams_help_icon(_l('ams_po_receive_help')); ?></h4>
             </div>
             <div class="modal-body">
                 <div class="row">
@@ -158,7 +158,7 @@ $canDecide  = staff_can('approve_po', 'ams_procurement') && $po->status === 'pen
                         <tr>
                             <td><?= e($l['description']); ?><br><span class="text-muted tw-text-xs"><?= _l('ams_po_type_' . $l['line_type']); ?></span></td>
                             <td><?= ams_qty($remaining); ?></td>
-                            <td><input type="number" class="form-control" name="qty[<?= (int) $l['id']; ?>]" value="<?= ams_qty($remaining); ?>" min="0" max="<?= ams_qty($remaining); ?>" step="<?= $l['line_type'] === 'asset' ? '1' : '0.01'; ?>"></td>
+                            <td><input type="number" class="form-control ams-po-receive-qty" name="qty[<?= (int) $l['id']; ?>]" value="" placeholder="0" min="0" max="<?= ams_qty($remaining); ?>" data-remaining="<?= ams_qty($remaining); ?>" step="<?= $l['line_type'] === 'asset' ? '1' : '0.01'; ?>"></td>
                             <td>
                                 <?php if ($l['line_type'] === 'asset') { ?>
                                 <textarea class="form-control tw-mb-1" rows="2" name="serials[<?= (int) $l['id']; ?>]" placeholder="<?= _l('ams_po_serials_placeholder'); ?>"></textarea>
@@ -172,9 +172,9 @@ $canDecide  = staff_can('approve_po', 'ams_procurement') && $po->status === 'pen
                     </tbody>
                 </table>
                 <?= render_textarea('note', 'ams_note'); ?>
-                <p class="text-muted tw-text-sm"><?= _l('ams_po_receive_help'); ?></p>
             </div>
             <div class="modal-footer">
+                <button type="button" class="btn btn-default pull-left" onclick="$('.ams-po-receive-qty').each(function() { $(this).val($(this).data('remaining')); });"><?= _l('ams_po_receive_all'); ?></button>
                 <button type="button" class="btn btn-default" data-dismiss="modal"><?= _l('close'); ?></button>
                 <button type="submit" class="btn btn-success"><?= _l('ams_po_receive'); ?></button>
             </div>
@@ -193,6 +193,8 @@ $canDecide  = staff_can('approve_po', 'ams_procurement') && $po->status === 'pen
             $.post(this.action, $(this).serialize()).done(function(r) {
                 r = typeof r === 'string' ? JSON.parse(r) : r;
                 r.success ? window.location.reload() : (alert_float('danger', r.message), btn.prop('disabled', false));
+            }).fail(function() {
+                btn.prop('disabled', false);
             });
         });
         $('.ams-po-post').on('click', function() {
@@ -203,6 +205,8 @@ $canDecide  = staff_can('approve_po', 'ams_procurement') && $po->status === 'pen
             $.post($(this).data('url'), { email: $(this).data('email') ? '1' : '0' }).done(function(r) {
                 r = typeof r === 'string' ? JSON.parse(r) : r;
                 r.success ? window.location.reload() : (alert_float('danger', r.message), btn.prop('disabled', false));
+            }).fail(function() {
+                btn.prop('disabled', false);
             });
         });
     });

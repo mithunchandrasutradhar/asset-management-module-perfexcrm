@@ -68,6 +68,13 @@ foreach ($stats['value'] as $v) {
         if (staff_can('view', 'ams_audits')) {
             $ops[] = $tile(_l('ams_audits_running'), total_rows($p . 'ams_audits', ['status' => 'in_progress']), 'fa-solid fa-clipboard-check', admin_url('asset_management/audits'));
         }
+        if (staff_can('view', 'ams_hostbill') && get_option('ams_hb_enabled') == '1') {
+            $CI =& get_instance();
+            $CI->load->model(AMS_MODULE_NAME . '/ams_hostbill_model');
+            $hb    = $CI->ams_hostbill_model->counts();
+            $ops[] = $tile(_l('ams_hb_dash_low'), '<span class="' . ($hb['low'] ? 'text-warning' : '') . '">' . (int) $hb['low'] . '</span>', 'fa-solid fa-arrow-trend-down', admin_url('asset_management/hostbill'));
+            $ops[] = $tile(_l('ams_hb_dash_out'), '<span class="' . ($hb['out'] ? 'text-danger' : '') . '">' . (int) $hb['out'] . '</span>', 'fa-solid fa-triangle-exclamation', admin_url('asset_management/hostbill'));
+        }
         if ($ops) { ?>
         <div class="row"><?= implode('', $ops); ?></div>
         <?php } ?>

@@ -71,14 +71,10 @@ $detail = function ($label, $value) {
                 </div>
 
                 <div class="row">
-                    <?= $tile(_l('ams_on_hand'), ams_qty($i->on_hand) . ' <span class="tw-text-sm tw-text-neutral-400">' . $unit . '</span>'); ?>
                     <?php if ($isAccessory) { ?>
                     <?= $tile(_l('ams_checked_out'), ams_qty($i->checked_out)); ?>
                     <?php } ?>
-                    <?php if ((float) $i->reserved > 0) { ?>
-                    <?= $tile(_l('ams_reserved'), ams_qty($i->reserved)); ?>
-                    <?php } ?>
-                    <?= $tile(_l('ams_available'), ams_qty($i->available), $state === 'out' ? 'text-danger' : ($state === 'low' ? 'text-warning' : 'text-success')); ?>
+                    <?= $tile(_l('ams_available'), ams_qty($i->available) . ' <span class="tw-text-sm tw-text-neutral-400">' . $unit . '</span>', $state === 'out' ? 'text-danger' : ($state === 'low' ? 'text-warning' : 'text-success')); ?>
                     <?= $tile(_l('ams_reorder_level'), ams_qty($i->reorder_level)); ?>
                     <?php if ($canGlobal) { ?>
                     <?= $tile(_l('ams_stock_value'), $i->value !== null ? e(app_format_money($i->value, $cur)) : '-'); ?>
@@ -117,7 +113,9 @@ $detail = function ($label, $value) {
                                                 <?= $detail('ams_unit_cost', $i->cost !== null ? e(app_format_money($i->cost, $cur)) : ''); ?>
                                                 <?php if ($kind === 'stock') { ?>
                                                 <?= $detail('ams_sale_price', $i->sale_price !== null ? e(app_format_money($i->sale_price, $cur)) : ''); ?>
+                                                <?php if (get_option('ams_item_sellable_enabled') == '1') { ?>
                                                 <?= $detail('ams_is_sellable', $i->is_sellable ? _l('settings_yes') : _l('settings_no')); ?>
+                                                <?php } ?>
                                                 <?php } ?>
                                                 <?= $detail('ams_reorder_qty', ams_qty($i->reorder_qty)); ?>
                                                 <?php } ?>
@@ -137,17 +135,13 @@ $detail = function ($label, $value) {
                                                 <tr>
                                                     <th><?= _l('ams_location'); ?></th>
                                                     <th class="text-right"><?= _l('ams_on_hand'); ?></th>
-                                                    <th class="text-right"><?= _l('ams_reserved'); ?></th>
-                                                    <th class="text-right"><?= _l('ams_available'); ?></th>
                                                 </tr>
                                             </thead>
                                             <tbody>
                                                 <?php foreach ($levels as $l) { ?>
                                                 <tr>
                                                     <td><?= e($l['location_name']); ?></td>
-                                                    <td class="text-right"><?= ams_qty($l['on_hand']); ?></td>
-                                                    <td class="text-right"><?= ams_qty($l['reserved']); ?></td>
-                                                    <td class="text-right tw-font-semibold"><?= ams_qty((float) $l['on_hand'] - (float) $l['reserved']); ?></td>
+                                                    <td class="text-right tw-font-semibold"><?= ams_qty($l['on_hand']); ?></td>
                                                 </tr>
                                                 <?php } ?>
                                                 <?php if (! $levels) { ?>
@@ -251,8 +245,7 @@ $detail = function ($label, $value) {
             </div>
             <div class="modal-body">
                 <?= render_select('location_id', $locations, ['id', 'name'], 'ams_location', $fromDefault, [], [], '', '', false); ?>
-                <?= render_input('qty', '<small class="req text-danger">* </small>' . _l('ams_adjust_qty') . ' (' . $unit . ')', '', 'number', ['step' => '0.01']); ?>
-                <p class="text-muted tw-text-sm -tw-mt-2"><?= _l('ams_adjust_qty_help'); ?></p>
+                <?= render_input('qty', '<small class="req text-danger">* </small>' . _l('ams_adjust_qty') . ' (' . $unit . ')' . ams_help_icon(_l('ams_adjust_qty_help')), '', 'number', ['step' => '0.01']); ?>
                 <?= render_select('reason', ams_adjust_reason_options(), ['id', 'name'], '<small class="req text-danger">* </small>' . _l('ams_reason'), 'correction', [], [], '', '', false); ?>
                 <?= render_textarea('note', '<small class="req text-danger">* </small>' . _l('ams_note')); ?>
             </div>
@@ -291,8 +284,7 @@ $detail = function ($label, $value) {
                     <?= render_select('assign_id_department', $deptOptions, ['id', 'name'], 'ams_assign_type_department'); ?>
                 </div>
                 <div class="ams-recipient-dept">
-                    <?= render_select('department_id', $deptOptions, ['id', 'name'], 'ams_department_cost_centre'); ?>
-                    <p class="text-muted tw-text-sm -tw-mt-2"><?= _l('ams_department_default_help'); ?></p>
+                    <?= render_select('department_id', $deptOptions, ['id', 'name'], ams_label_help('ams_department_cost_centre', _l('ams_department_default_help'))); ?>
                 </div>
                 <?php if ($isAccessory) { ?>
                 <?= render_date_input('expected_return', 'ams_expected_return'); ?>

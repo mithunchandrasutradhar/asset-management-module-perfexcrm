@@ -31,6 +31,25 @@ class Setup extends AdminController
         $this->load->view(AMS_MODULE_NAME . '/setup/manage', $data);
     }
 
+    /** Setup → Change log: every create / change / delete of master data. */
+    public function changelog()
+    {
+        if (staff_cant('view', 'ams_setup')) {
+            access_denied('ams_setup');
+        }
+        $data['title'] = _l('ams_setup_changelog');
+        $data['table'] = App_table::find('ams_setup_log');
+        $this->load->view(AMS_MODULE_NAME . '/setup/changelog', $data);
+    }
+
+    public function changelog_table()
+    {
+        if (staff_cant('view', 'ams_setup')) {
+            ajax_access_denied();
+        }
+        App_table::find('ams_setup_log')->output();
+    }
+
     public function table($entity)
     {
         if (staff_cant('view', 'ams_setup')) {

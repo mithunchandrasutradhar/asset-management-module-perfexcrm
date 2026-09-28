@@ -59,7 +59,7 @@ $action       = admin_url('asset_management/assets/asset' . ($isNew ? '' : '/' .
                             </div>
                         </div>
                         <?php if (! $isNew) { ?>
-                        <?= render_select('department_id', $deptOptions, ['id', 'name'], 'ams_department_cost_centre', $v('department_id')); ?>
+                        <?= render_select('department_id', $deptOptions, ['id', 'name'], ams_label_help('ams_department_cost_centre', _l('ams_department_default_help')), $v('department_id')); ?>
                         <?php } ?>
                         <?= render_textarea('notes', 'ams_notes', $v('notes')); ?>
                     </div>
@@ -144,8 +144,7 @@ $action       = admin_url('asset_management/assets/asset' . ($isNew ? '' : '/' .
 
                 <div class="panel_s">
                     <div class="panel-body">
-                        <h4 class="tw-mt-0 tw-font-semibold tw-text-lg tw-mb-1"><?= _l('ams_depreciation'); ?></h4>
-                        <p class="text-muted tw-text-sm tw-mb-3"><?= _l('ams_dep_asset_help'); ?></p>
+                        <h4 class="tw-mt-0 tw-font-semibold tw-text-lg tw-mb-4"><?= _l('ams_depreciation') . ams_help_icon(_l('ams_dep_asset_help')); ?></h4>
                         <?= render_select('depreciation_method', ams_depreciation_method_options(true), ['id', 'name'], 'ams_dep_method', $v('depreciation_method'), [], [], '', '', false); ?>
                         <div class="row">
                             <div class="col-md-6">
@@ -180,8 +179,7 @@ $action       = admin_url('asset_management/assets/asset' . ($isNew ? '' : '/' .
                             <div class="ams-assign ams-assign-location<?= $assignType === 'location' ? '' : ' hide'; ?>">
                                 <?= render_select('assign_id_location', $locations, ['id', 'name'], 'ams_assign_type_location', $v('assign_id_location')); ?>
                             </div>
-                            <?= render_select('department_id', $deptOptions, ['id', 'name'], 'ams_department_cost_centre', $v('department_id'), [], [], '', '', true); ?>
-                            <p class="text-muted tw-text-sm -tw-mt-2"><?= _l('ams_department_default_help'); ?></p>
+                            <?= render_select('department_id', $deptOptions, ['id', 'name'], ams_label_help('ams_department_cost_centre', _l('ams_department_default_help')), $v('department_id'), [], [], '', '', true); ?>
                             <?= render_date_input('expected_checkin', 'ams_expected_checkin', $v('expected_checkin')); ?>
                         </div>
 

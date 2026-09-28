@@ -29,6 +29,10 @@ return App_table::find('ams_acceptances')
         ];
 
         $where = ['AND ' . $t . '.staff_id = ' . (int) $staff_id];
+        // Accessory sign-offs belong to the accessories permission (own ones are always visible).
+        if ((int) $staff_id !== (int) get_staff_user_id() && ! ams_item_can('view', 'accessory')) {
+            $where[] = 'AND ' . $t . '.rel_type = "asset"';
+        }
         if ($filtersWhere = $this->getWhereFromRules()) {
             $where[] = $filtersWhere;
         }

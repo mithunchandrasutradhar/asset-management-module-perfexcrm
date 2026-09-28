@@ -5,7 +5,7 @@
     <div class="content">
         <div class="row">
             <div class="col-md-12">
-                <h4 class="tw-mt-0 tw-font-bold tw-text-xl tw-mb-3"><?= _l('ams_mt_schedules'); ?></h4>
+                <h4 class="tw-mt-0 tw-font-bold tw-text-xl tw-mb-3"><?= _l('ams_mt_schedules') . ams_help_icon(_l('ams_mt_schedules_help', (int) get_option('ams_maintenance_lead_days'))); ?></h4>
                 <div class="tw-mb-2">
                     <div class="_buttons sm:tw-space-x-1 rtl:sm:tw-space-x-reverse">
                         <?php if (staff_can('create', 'ams_maintenance')) { ?>
@@ -19,7 +19,6 @@
                         </div>
                     </div>
                 </div>
-                <div class="alert alert-info"><?= _l('ams_mt_schedules_help', (int) get_option('ams_maintenance_lead_days')); ?></div>
                 <div class="panel_s">
                     <div class="panel-body panel-table-full">
                         <?php render_datatable([
@@ -84,6 +83,8 @@
 
     function ams_sch_new() {
         var f = $('#ams-sch-form');
+        f[0].reset();
+        f.find('select.selectpicker').selectpicker('refresh');
         f.find('[name="id"]').val('');
         f.find('.ams-sch-assets').removeClass('hide');
         $('#ams_sch_modal').modal('show');

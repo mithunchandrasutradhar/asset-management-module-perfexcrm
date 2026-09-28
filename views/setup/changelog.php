@@ -4,7 +4,8 @@
     <div class="content">
         <div class="row">
             <div class="col-md-12">
-                <h4 class="tw-mt-0 tw-font-bold tw-text-xl tw-mb-3"><?= _l('ams_stock_levels'); ?></h4>
+                <?php $this->load->view(AMS_MODULE_NAME . '/setup/_tabs', ['active' => 'changelog', 'help' => _l('ams_setup_changelog_help')]); ?>
+
                 <div class="tw-mb-2 tw-flex tw-justify-end">
                     <div id="vueApp">
                         <app-filters id="<?= $table->id(); ?>" view="<?= $table->viewName(); ?>"
@@ -12,14 +13,14 @@
                         </app-filters>
                     </div>
                 </div>
+
                 <div class="panel_s">
                     <div class="panel-body panel-table-full">
                         <?php render_datatable([
-                            _l('ams_sku'), _l('ams_item_name'), _l('ams_item_kind'), _l('ams_category'), _l('ams_location'),
-                            _l('ams_on_hand'), _l('ams_stock_value'),
-                        ], 'ams-levels', [], [
-                            'data-last-order-identifier' => 'ams-levels',
-                            'data-default-order'         => get_table_last_order('ams-levels'),
+                            _l('ams_date'), _l('ams_setup_record_type'), _l('ams_name'), _l('ams_action'), _l('ams_changes'), _l('ams_by'),
+                        ], 'ams-setup-log', [], [
+                            'data-last-order-identifier' => 'ams-setup-log',
+                            'data-default-order'         => get_table_last_order('ams-setup-log'),
                         ]); ?>
                     </div>
                 </div>
@@ -30,7 +31,7 @@
 <?php init_tail(); ?>
 <script>
     $(function() {
-        initDataTable('.table-ams-levels', admin_url + 'asset_management/inventory/levels_table', [], [], {}, [1, 'asc']);
+        initDataTable('.table-ams-setup-log', admin_url + 'asset_management/setup/changelog_table', [], [], {}, [0, 'desc']);
     });
 </script>
 </body>

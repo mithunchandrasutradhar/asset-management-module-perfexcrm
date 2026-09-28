@@ -51,6 +51,10 @@ class Ams_setup_model extends App_Model
             }
         }
 
+        if ($error = $this->validate($entity, $cfg, $data, $id)) {
+            return ['success' => false, 'message' => $error];
+        }
+
         if (isset($data['parent_id']) && $id && (int) $data['parent_id'] === (int) $id) {
             return ['success' => false, 'message' => _l('ams_parent_self')];
         }
@@ -139,14 +143,29 @@ class Ams_setup_model extends App_Model
             return ['success' => false, 'message' => _l('ams_status_system_cannot_delete')];
         }
 
+        // Where the record is still used, named in the refusal message.
+        $labels = [
+            'ams_assets' => 'ams_assets', 'ams_categories' => 'ams_categories', 'ams_models' => 'ams_models',
+            'ams_items' => 'ams_stock_items', 'ams_licenses' => 'ams_licenses', 'ams_po_lines' => 'ams_purchase_orders',
+            'ams_purchase_orders' => 'ams_purchase_orders', 'ams_goods_receipts' => 'ams_purchase_orders',
+            'ams_requests' => 'ams_requests', 'ams_audits' => 'ams_audits', 'ams_audit_lines' => 'ams_audits',
+            'ams_maintenance' => 'ams_maintenance', 'ams_maintenance_schedules' => 'ams_maintenance',
+            'ams_disposals' => 'ams_disposal_register', 'ams_stock_movements' => 'ams_stock_movements',
+            'ams_stock_levels' => 'ams_stock_levels', 'ams_item_checkouts' => 'ams_stock_movements', 'ams_locations' => 'ams_locations',
+        ];
+        $usedIn = [];
         foreach ($cfg['in_use'] as [$table, $column]) {
             $where = [$column => (int) $id];
-            if ($table === 'ams_assets') {
+            // Deleted assets keep their history, so statuses and categories they point to must stay.
+            if ($table === 'ams_assets' && ! in_array($entity, ['statuses', 'categories'], true)) {
                 $where['is_deleted'] = 0;
             }
             if (total_rows(db_prefix() . $table, $where) > 0) {
-                return ['success' => false, 'message' => _l('is_referenced', _l($cfg['singular']))];
+                $usedIn[] = _l($labels[$table] ?? $table);
             }
+        }
+        if ($usedIn) {
+            return ['success' => false, 'message' => _l('ams_in_use_by', [_l($cfg['singular']), implode(', ', array_unique($usedIn))])];
         }
 
         $this->db->where('id', (int) $id)->delete(db_prefix() . $cfg['table']);
@@ -154,6 +173,78 @@ class Ams_setup_model extends App_Model
         log_activity('AMS ' . _l($cfg['singular']) . ' deleted [ID: ' . $id . ', ' . ($row['name'] ?? '') . ']');
 
         return ['success' => true, 'message' => _l('deleted', _l($cfg['singular']))];
+    }
+
+    /**
+     * Server-side checks the form alone can't guarantee: select values must be real
+     * options, colours real colours, names / codes unique, lengths within the columns.
+     * Returns an error message or null.
+     */
+    private function validate($entity, $cfg, &$data, $id)
+    {
+        foreach ($cfg['fields'] as $field => $def) {
+            $value = $data[$field] ?? null;
+            if ($value === null || $value === '' || $field === 'parent_id') {
+                continue;
+            }
+            if ($def['type'] === 'select' && ! empty($def['options']) && is_callable($def['options']) && $field !== 'depreciation_method') {
+                $allowed = array_map('strval', array_column(call_user_func($def['options']), 'id'));
+                if (! in_array((string) $value, $allowed, true)) {
+                    return _l('ams_invalid_value', _l($def['label']));
+                }
+            }
+            if ($def['type'] === 'staff' && total_rows(db_prefix() . 'staff', ['staffid' => (int) $value, 'active' => 1]) === 0) {
+                return _l('ams_invalid_value', _l($def['label']));
+            }
+            if ($def['type'] === 'number' && ! is_numeric($value)) {
+                return _l('ams_invalid_value', _l($def['label']));
+            }
+            if ($def['type'] === 'color' && ! preg_match('/^#[0-9a-f]{3}([0-9a-f]{3})?$/i', (string) $value)) {
+                return _l('ams_invalid_value', _l($def['label']));
+            }
+            if (in_array($def['type'], ['text'], true) && mb_strlen((string) $value) > ($field === 'code' ? 20 : 191)) {
+                return _l('ams_value_too_long', _l($def['label']));
+            }
+        }
+
+        if (! empty($data['email']) && ! filter_var($data['email'], FILTER_VALIDATE_EMAIL)) {
+            return _l('ams_invalid_value', _l('ams_email'));
+        }
+
+        $table = db_prefix() . $cfg['table'];
+
+        // Names are unique (within the same parent for categories / locations).
+        if (! empty($data['name'])) {
+            $this->db->where('name', $data['name'])->where('id !=', (int) $id);
+            if (array_key_exists('parent_id', $cfg['fields'])) {
+                $this->db->where('parent_id', (int) ($data['parent_id'] ?? 0));
+            }
+            if ($entity === 'models') {
+                $this->db->where('brand_id', $data['brand_id'] ?? null);
+            }
+            if ($this->db->count_all_results($table) > 0) {
+                return _l('ams_name_exists', e($data['name']));
+            }
+        }
+
+        // Category codes feed asset tags (one sequence per code), so they must be unique.
+        if ($entity === 'categories' && ! empty($data['code'])) {
+            $code = strtoupper(preg_replace('/[^A-Za-z0-9]/', '', $data['code']));
+            if ($code !== '' && total_rows($table, ['code' => $code, 'id !=' => (int) $id]) > 0) {
+                return _l('ams_category_code_exists', e($code));
+            }
+        }
+
+        // A status's type drives check-out / check-in: don't change it under assets using it.
+        if ($entity === 'statuses' && $id && isset($data['type'])) {
+            $current = $this->get('statuses', $id);
+            if ($current && ! $current['system_key'] && $current['type'] !== $data['type']
+                && total_rows(db_prefix() . 'ams_assets', ['status_id' => (int) $id, 'is_deleted' => 0]) > 0) {
+                return _l('ams_status_type_in_use');
+            }
+        }
+
+        return null;
     }
 
     private function log_changes($relType, $id, $old, $new)

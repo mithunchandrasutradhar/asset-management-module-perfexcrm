@@ -5,7 +5,7 @@
     <div class="content">
         <div class="row">
             <div class="col-md-12">
-                <h4 class="tw-mt-0 tw-font-bold tw-text-xl tw-mb-3"><?= _l($cfg['plural']); ?></h4>
+                <?php $this->load->view(AMS_MODULE_NAME . '/setup/_tabs', ['active' => $entity, 'help' => $entity === 'statuses' ? _l('ams_statuses_help') : '']); ?>
 
                 <div class="tw-mb-2">
                     <div class="_buttons sm:tw-space-x-1 rtl:sm:tw-space-x-reverse">
@@ -14,11 +14,6 @@
                             <i class="fa-regular fa-plus tw-mr-1"></i><?= _l('ams_new_record', _l($cfg['singular'])); ?>
                         </a>
                         <?php } ?>
-                        <div class="btn-group">
-                            <?php foreach (ams_setup_entities() as $key => $e) { ?>
-                            <a href="<?= admin_url('asset_management/setup/index/' . $key); ?>" class="btn btn-default<?= $key === $entity ? ' active' : ''; ?>"><?= _l($e['plural']); ?></a>
-                            <?php } ?>
-                        </div>
                         <div id="vueApp" class="tw-inline pull-right tw-ml-0 sm:tw-ml-1.5 rtl:tw-mr-1.5 rtl:tw-ml-0">
                             <app-filters id="<?= $table->id(); ?>"
                                 view="<?= $table->viewName(); ?>"
@@ -29,9 +24,6 @@
                     </div>
                 </div>
 
-                <?php if ($entity === 'statuses') { ?>
-                <div class="alert alert-info"><?= _l('ams_statuses_help'); ?></div>
-                <?php } ?>
 
                 <div class="panel_s">
                     <div class="panel-body panel-table-full">
@@ -60,8 +52,9 @@
             <div class="modal-body">
                 <input type="hidden" name="id" value="">
                 <?php foreach ($cfg['fields'] as $field => $def) {
-                    $label = (! empty($def['required']) ? '<small class="req text-danger">* </small>' : '') . _l($def['label']);
-                    $help  = ! empty($def['help']) ? '<p class="text-muted tw-text-sm -tw-mt-2">' . _l($def['help']) . '</p>' : '';
+                    // Field help is an info icon after the label (tooltip).
+                    $label = (! empty($def['required']) ? '<small class="req text-danger">* </small>' : '') . _l($def['label'])
+                        . (! empty($def['help']) ? ams_help_icon(_l($def['help'])) : '');
 
                     switch ($def['type']) {
                         case 'textarea':
@@ -85,7 +78,6 @@
                         default:
                             echo render_input($field, $label);
                     }
-                    echo $help;
                 } ?>
                 <p class="text-muted tw-text-sm ams-system-note hide"><?= _l('ams_status_system_note'); ?></p>
             </div>

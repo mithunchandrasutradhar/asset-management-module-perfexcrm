@@ -85,12 +85,13 @@ class Ams_import_model extends App_Model
                     'sale_price'       => $f('ams_sale_price', false, ['sale price', 'price', 'selling price']),
                     'reorder_level'    => $f('ams_reorder_level', false, ['reorder level', 'min stock', 'minimum']),
                     'reorder_qty'      => $f('ams_reorder_qty', false, ['reorder qty', 'reorder quantity']),
-                    'is_sellable'      => $f('ams_is_sellable', false, ['sellable', 'is sellable', 'for sale']),
                     'default_location' => $f('ams_default_location', false, ['default location']),
                     'opening_qty'      => $f('ams_opening_stock', false, ['qty', 'quantity', 'opening qty', 'opening stock', 'stock', 'on hand']),
                     'opening_location' => $f('ams_import_opening_location', false, ['location', 'store', 'warehouse', 'opening location']),
                     'description'      => $f('ams_description', false, ['description', 'details']),
-                ];
+                ] + (get_option('ams_item_sellable_enabled') == '1' ? [
+                    'is_sellable'      => $f('ams_is_sellable', false, ['sellable', 'is sellable', 'for sale']),
+                ] : []);
             case 'suppliers':
                 return [
                     'name'           => $f('ams_name', true, ['name', 'supplier', 'supplier name', 'vendor', 'company']),
@@ -435,7 +436,11 @@ class Ams_import_model extends App_Model
             return [$existing ? 'update' : 'create', $label, implode(' ', $notes)];
         }
 
+        // Same switch as assets: without "notify", opening stock at / below the reorder level
+        // does not send one low-stock alert per imported row.
+        $GLOBALS['ams_import_silent'] = empty($this->options['notify']);
         $r = $this->ams_inventory_model->save_item($input, $existing['id'] ?? null);
+        unset($GLOBALS['ams_import_silent']);
         if (! $r['success']) {
             return ['error', $label, $r['message']];
         }

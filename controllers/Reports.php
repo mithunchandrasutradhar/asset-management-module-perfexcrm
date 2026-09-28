@@ -107,8 +107,12 @@ class Reports extends AdminController
 
     public function recalculate()
     {
-        if (! $this->input->post()) {
+        if ($this->input->method() !== 'post') {
             show_404();
+        }
+        // A write over every asset: needs asset edit rights, not only report viewing.
+        if (! is_admin() && staff_cant('edit', 'ams_assets')) {
+            access_denied('ams_assets');
         }
         $n = $this->ams_finance_model->recalculate();
         update_option('ams_last_dep_run', time());

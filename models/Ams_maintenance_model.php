@@ -41,15 +41,39 @@ class Ams_maintenance_model extends App_Model
         if (! in_array($type, array_column($this->types(), 'id'))) {
             $type = 'other';
         }
+        $supplierId = (int) ($input['supplier_id'] ?? 0);
+        if ($supplierId && total_rows($this->t('ams_suppliers'), ['id' => $supplierId]) === 0) {
+            return ['success' => false, 'message' => _l('ams_invalid_value', _l('ams_supplier'))];
+        }
+        $cost = trim(str_replace(',', '', (string) ($input['cost'] ?? '')));
+        if ($cost !== '' && (! is_numeric($cost) || (float) $cost < 0)) {
+            return ['success' => false, 'message' => _l('ams_negative_not_allowed')];
+        }
+
+        // A job opened from an issue report: the report must be an open issue on this asset without a job yet.
+        $requestId = (int) ($input['request_id'] ?? 0);
+        if (! $id && $requestId) {
+            $req = $this->db->where('id', $requestId)->get($this->t('ams_requests'))->row();
+            if (! $req || $req->type !== 'issue' || (int) $req->asset_id !== $assetId
+                || ! in_array($req->status, ['pending_dept', 'pending_manager', 'approved'], true)) {
+                return ['success' => false, 'message' => _l('ams_invalid_value', _l('ams_request'))];
+            }
+            if (total_rows($this->t('ams_maintenance'), ['request_id' => $requestId, 'status !=' => 'cancelled']) > 0) {
+                return ['success' => false, 'message' => _l('ams_mt_request_has_job')];
+            }
+        }
 
         $data = [
             'asset_id'    => $assetId,
             'type'        => $type,
             'title'       => mb_substr($title, 0, 191),
-            'supplier_id' => (int) ($input['supplier_id'] ?? 0) ?: null,
+            'supplier_id' => $supplierId ?: null,
             'due_date'    => ! empty($input['due_date']) ? to_sql_date($input['due_date']) : null,
             'notes'       => trim((string) ($input['notes'] ?? '')) ?: null,
         ];
+        if ($cost !== '') {
+            $data['cost'] = round((float) $cost, 2);
+        }
 
         if ($id) {
             $row = $this->get($id);
@@ -64,8 +88,8 @@ class Ams_maintenance_model extends App_Model
 
         $data += [
             'status'       => 'scheduled',
-            'request_id'   => (int) ($input['request_id'] ?? 0) ?: null,
-            'schedule_id'  => (int) ($input['schedule_id'] ?? 0) ?: null,
+            'request_id'   => $requestId ?: null,
+            // schedule_id is only set by the cron (process_due_schedules), never from a form.
             'created_by'   => get_staff_user_id() ?: null,
             'date_created' => date('Y-m-d H:i:s'),
         ];
@@ -139,17 +163,34 @@ class Ams_maintenance_model extends App_Model
 
         $endDate = ! empty($input['end_date']) ? to_sql_date($input['end_date']) : date('Y-m-d');
         $now     = date('Y-m-d H:i:s');
+        if (! $endDate || $endDate > date('Y-m-d')) {
+            return ['success' => false, 'message' => _l('ams_mt_end_date_future')];
+        }
+        if ($job->start_date && $endDate < $job->start_date) {
+            return ['success' => false, 'message' => _l('ams_mt_end_before_start', _d($job->start_date))];
+        }
+        $downtime = trim((string) ($input['downtime_hours'] ?? ''));
+        if ($downtime !== '' && (! is_numeric($downtime) || (float) $downtime < 0)) {
+            return ['success' => false, 'message' => _l('ams_negative_not_allowed')];
+        }
 
-        $this->db->where('id', (int) $id)->update($this->t('ams_maintenance'), [
+        $this->db->trans_begin();
+
+        $this->db->where('id', (int) $id)->where_in('status', ['scheduled', 'in_progress'])->update($this->t('ams_maintenance'), [
             'status'         => 'completed',
             'start_date'     => $job->start_date ?: $endDate,
             'end_date'       => $endDate,
             'cost'           => $cost === '' ? null : round((float) $cost, 2),
-            'downtime_hours' => is_numeric($input['downtime_hours'] ?? '') ? (float) $input['downtime_hours'] : null,
+            'downtime_hours' => $downtime === '' ? null : round((float) $downtime, 2),
             'resolution'     => trim((string) ($input['resolution'] ?? '')) ?: null,
             'completed_by'   => get_staff_user_id() ?: null,
             'date_completed' => $now,
         ]);
+        if ($this->db->affected_rows() !== 1) {
+            $this->db->trans_rollback();
+
+            return ['success' => false, 'message' => _l('ams_mt_closed')];
+        }
 
         $this->restore_asset_status($job);
         $this->history($job->asset_id, _l('ams_mt_history_completed', $job->title));
@@ -180,6 +221,13 @@ class Ams_maintenance_model extends App_Model
             }
         }
 
+        if ($this->db->trans_status() === false) {
+            $this->db->trans_rollback();
+
+            return ['success' => false, 'message' => _l('ams_db_error')];
+        }
+        $this->db->trans_commit();
+
         log_activity('AMS maintenance completed [#' . (int) $id . ', ' . $job->title . ']');
 
         return ['success' => true, 'message' => _l('ams_mt_completed')];
@@ -193,6 +241,8 @@ class Ams_maintenance_model extends App_Model
         }
         $this->db->where('id', (int) $id)->update($this->t('ams_maintenance'), ['status' => 'cancelled', 'date_completed' => date('Y-m-d H:i:s')]);
         $this->restore_asset_status($job);
+        $this->skip_schedule_occurrence($job);
+        $this->history($job->asset_id, _l('ams_mt_history_cancelled', $job->title));
 
         return ['success' => true, 'message' => _l('ams_mt_cancelled')];
     }
@@ -204,8 +254,40 @@ class Ams_maintenance_model extends App_Model
             return ['success' => false, 'message' => _l('ams_mt_cannot_delete')];
         }
         $this->db->where('id', (int) $id)->delete($this->t('ams_maintenance'));
+        if ($job->status === 'scheduled') {
+            $this->skip_schedule_occurrence($job);
+        }
+        $this->history($job->asset_id, _l('ams_mt_history_deleted', $job->title));
+        log_activity('AMS maintenance deleted [#' . (int) $id . ', ' . $job->title . ']');
 
         return ['success' => true, 'message' => _l('deleted', _l('ams_maintenance'))];
+    }
+
+    /**
+     * A cron-created job was cancelled / deleted: move its schedule on to the next
+     * occurrence so it keeps running (otherwise that due date stays "already
+     * reminded" and the schedule never fires again).
+     */
+    private function skip_schedule_occurrence($job)
+    {
+        if (! $job->schedule_id) {
+            return;
+        }
+        $s = $this->get_schedule($job->schedule_id);
+        if (! $s || ! $s->active) {
+            return;
+        }
+        $next = $s->next_due;
+        while ($next <= date('Y-m-d')) {
+            $next = $this->add_interval($next, $s->interval_value, $s->interval_unit);
+        }
+        if ($next === $s->next_due && $s->reminded_for !== $s->next_due) {
+            return; // not yet processed for this date: nothing is stuck
+        }
+        if ($next === $s->next_due) {
+            $next = $this->add_interval($next, $s->interval_value, $s->interval_unit);
+        }
+        $this->db->where('id', (int) $s->id)->update($this->t('ams_maintenance_schedules'), ['next_due' => $next, 'reminded_for' => null]);
     }
 
     /**
@@ -216,6 +298,17 @@ class Ams_maintenance_model extends App_Model
     private function restore_asset_status($job)
     {
         if (! $job->status_before) {
+            return;
+        }
+
+        // Another job on the asset is still in progress: it inherits the restore instead.
+        $other = $this->db->where('asset_id', (int) $job->asset_id)->where('id !=', (int) $job->id)
+            ->where('status', 'in_progress')->order_by('id', 'asc')->get($this->t('ams_maintenance'))->row();
+        if ($other) {
+            if (! $other->status_before) {
+                $this->db->where('id', (int) $other->id)->update($this->t('ams_maintenance'), ['status_before' => $job->status_before]);
+            }
+
             return;
         }
 
@@ -311,8 +404,20 @@ class Ams_maintenance_model extends App_Model
             'active'         => ! empty($input['active']) ? 1 : 0,
         ];
 
+        if ($data['supplier_id'] && total_rows($this->t('ams_suppliers'), ['id' => $data['supplier_id']]) === 0) {
+            return ['success' => false, 'message' => _l('ams_invalid_value', _l('ams_supplier'))];
+        }
+
         if ($id) {
-            $this->db->where('id', (int) $id)->update($this->t('ams_maintenance_schedules'), $data + ['reminded_for' => null]);
+            $old = $this->get_schedule($id);
+            if (! $old) {
+                return ['success' => false, 'message' => _l('ams_not_found')];
+            }
+            // Only a new due date re-arms the reminder (otherwise every edit would re-send it).
+            if ($old->next_due !== $data['next_due']) {
+                $data['reminded_for'] = null;
+            }
+            $this->db->where('id', (int) $id)->update($this->t('ams_maintenance_schedules'), $data);
 
             return ['success' => true, 'message' => _l('updated_successfully', _l('ams_mt_schedule'))];
         }
@@ -343,6 +448,11 @@ class Ams_maintenance_model extends App_Model
 
     public function delete_schedule($id)
     {
+        if (! $this->get_schedule($id)) {
+            return ['success' => false, 'message' => _l('ams_not_found')];
+        }
+        // Jobs it already opened stay (with their history) but no longer point at it.
+        $this->db->where('schedule_id', (int) $id)->update($this->t('ams_maintenance'), ['schedule_id' => null]);
         $this->db->where('id', (int) $id)->delete($this->t('ams_maintenance_schedules'));
 
         return ['success' => true, 'message' => _l('deleted', _l('ams_mt_schedule'))];
@@ -379,6 +489,9 @@ class Ams_maintenance_model extends App_Model
                 $created++;
             }
 
+            // Mark first: a crash while sending must not send the same reminder again.
+            $this->db->where('id', (int) $s['id'])->update($this->t('ams_maintenance_schedules'), ['reminded_for' => $s['next_due']]);
+
             $label = $s['asset_tag'] . ' - ' . $s['asset_name'];
             ams_notify(ams_manager_recipients(), 'ams_notify_maintenance_due', [$s['title'], $label, _d($s['next_due'])], 'asset_management/maintenance');
             foreach (ams_manager_recipients() as $staffId) {
@@ -389,8 +502,6 @@ class Ams_maintenance_model extends App_Model
                     '{ams_link}'     => admin_url('asset_management/maintenance'),
                 ]);
             }
-
-            $this->db->where('id', (int) $s['id'])->update($this->t('ams_maintenance_schedules'), ['reminded_for' => $s['next_due']]);
         }
 
         return $created;

@@ -8,8 +8,16 @@
         });
     }
 
+    // Reload without ?request_id (it re-opens the pre-filled form and invites a duplicate job).
+    function ams_mt_done() {
+        var url = window.location.href.replace(/([?&])request_id=\d+&?/, '$1').replace(/[?&]$/, '');
+        url === window.location.href ? window.location.reload() : (window.location.href = url);
+    }
+
     function ams_mt_new() {
         var f = $('#ams-mt-form');
+        f[0].reset();
+        f.find('select.selectpicker').selectpicker('refresh');
         f.find('[name="id"]').val('');
         f.find('.ams-mt-new-only, .ams-mt-asset').removeClass('hide');
         $('#ams_mt_modal').modal('show');
@@ -42,16 +50,19 @@
         }
         $.post(admin_url + 'asset_management/maintenance/cancel/' + id).done(function(r) {
             r = typeof r === 'string' ? JSON.parse(r) : r;
-            r.success ? window.location.reload() : alert_float('danger', r.message);
+            r.success ? ams_mt_done() : alert_float('danger', r.message);
         });
     }
 
     $(function() {
         $('#ams-mt-form, .ams-mt-action-form').on('submit', function(e) {
             e.preventDefault();
+            var btn = $(this).find('[type="submit"]').prop('disabled', true);
             $.post($(this).attr('action'), $(this).serialize()).done(function(r) {
                 r = typeof r === 'string' ? JSON.parse(r) : r;
-                r.success ? window.location.reload() : alert_float('danger', r.message);
+                r.success ? ams_mt_done() : alert_float('danger', r.message);
+            }).always(function() {
+                btn.prop('disabled', false);
             });
         });
     });

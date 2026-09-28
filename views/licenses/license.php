@@ -27,8 +27,14 @@ $cur    = e(get_base_currency()->name);
                         </div>
                         <?php if ($canKey) { ?>
                         <?= render_textarea('license_key', 'ams_lic_key', '', ['rows' => 2, 'placeholder' => ! $isNew && $license->has_key ? _l('ams_lic_key_keep') : '']); ?>
+                        <?php if (! $isNew && $license->has_key) { ?>
+                        <div class="checkbox checkbox-primary tw-mt-0">
+                            <input type="checkbox" name="clear_key" id="clear_key" value="1">
+                            <label for="clear_key"><?= _l('ams_lic_clear_key'); ?></label>
+                        </div>
+                        <?php } ?>
                         <?php } else { ?>
-                        <p class="text-muted"><?= _l('ams_lic_key_no_permission'); ?></p>
+                        <div class="form-group"><label class="control-label"><?= _l('ams_lic_key') . ams_help_icon(_l('ams_lic_key_no_permission')); ?></label><p class="form-control-static text-muted"><?= _l('ams_lic_key_hidden'); ?></p></div>
                         <?php } ?>
                         <?= render_input('licensed_to', 'ams_lic_licensed_to', $v('licensed_to'), 'text', ['placeholder' => _l('ams_lic_licensed_to_placeholder')]); ?>
                         <?= render_textarea('notes', 'ams_notes', $v('notes')); ?>

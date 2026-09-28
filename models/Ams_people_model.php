@@ -184,7 +184,10 @@ class Ams_people_model extends App_Model
             $update += ['status' => 'declined', 'note' => $note];
         }
 
-        $this->db->where('id', (int) $acc->id)->update($this->t('ams_acceptances'), $update);
+        $this->db->where('id', (int) $acc->id)->where('status', 'pending')->update($this->t('ams_acceptances'), $update);
+        if ($this->db->affected_rows() !== 1) {
+            return ['success' => false, 'message' => _l('ams_acceptance_not_pending')];
+        }
 
         if ($acc->rel_type === 'asset') {
             $this->db->insert($this->t('ams_asset_history'), [
@@ -240,10 +243,14 @@ class Ams_people_model extends App_Model
 
     // ─── Department approvers ─────────────────────────────────────────────
 
-    public function department_approvers($departmentId)
+    /** Active approvers of a department (optionally without one staff member, e.g. the requester). */
+    public function department_approvers($departmentId, $exceptStaffId = 0)
     {
-        return array_map('intval', array_column($this->db->where('department_id', (int) $departmentId)
-            ->get($this->t('ams_department_approvers'))->result_array(), 'staff_id'));
+        $rows = $this->db->select('a.staff_id')->from($this->t('ams_department_approvers') . ' a')
+            ->join($this->t('staff') . ' s', 's.staffid = a.staff_id AND s.active = 1')
+            ->where('a.department_id', (int) $departmentId)->get()->result_array();
+
+        return array_values(array_filter(array_map('intval', array_column($rows, 'staff_id')), fn ($id) => $id !== (int) $exceptStaffId));
     }
 
     public function save_department_approvers($departmentId, $staffIds)
@@ -253,10 +260,15 @@ class Ams_people_model extends App_Model
         }
 
         $staffIds = array_values(array_unique(array_filter(array_map('intval', (array) $staffIds))));
+        if ($staffIds) {
+            $staffIds = array_map('intval', array_column($this->db->select('staffid')->where_in('staffid', $staffIds)->where('active', 1)->get($this->t('staff'))->result_array(), 'staffid'));
+        }
+        $this->db->trans_begin();
         $this->db->where('department_id', (int) $departmentId)->delete($this->t('ams_department_approvers'));
         foreach ($staffIds as $staffId) {
             $this->db->insert($this->t('ams_department_approvers'), ['department_id' => (int) $departmentId, 'staff_id' => $staffId]);
         }
+        $this->db->trans_status() === false ? $this->db->trans_rollback() : $this->db->trans_commit();
 
         log_activity('AMS department approvers updated [Department #' . (int) $departmentId . ': ' . count($staffIds) . ' approver(s)]');
 
@@ -310,16 +322,27 @@ class Ams_people_model extends App_Model
             $assetId = null;
         }
 
-        $staffId = (int) get_staff_user_id();
-        $dept    = ams_staff_primary_department($staffId);
-        $status  = $dept && $this->department_approvers($dept) ? 'pending_dept' : 'pending_manager';
+        $categoryId = (int) ($input['category_id'] ?? 0) ?: null;
+        $itemId     = in_array($type, ['accessory', 'consumable'], true) ? ((int) ($input['item_id'] ?? 0) ?: null) : null;
+        if ($categoryId && total_rows($this->t('ams_categories'), ['id' => $categoryId]) === 0) {
+            return ['success' => false, 'message' => _l('ams_invalid_value', _l('ams_category'))];
+        }
+        if ($itemId && total_rows($this->t('ams_items'), ['id' => $itemId, 'kind' => $type]) === 0) {
+            return ['success' => false, 'message' => _l('ams_invalid_value', _l('ams_item'))];
+        }
 
+        $staffId = (int) get_staff_user_id();
+        $dept    = $this->approval_department($staffId);
+        // Department stage only when someone other than the requester can approve it there.
+        $status  = $dept && $this->department_approvers($dept, $staffId) ? 'pending_dept' : 'pending_manager';
+
+        $this->db->trans_begin();
         $this->db->insert($this->t('ams_requests'), [
             'staff_id'      => $staffId,
             'department_id' => $dept,
             'type'          => $type,
-            'category_id'   => (int) ($input['category_id'] ?? 0) ?: null,
-            'item_id'       => (int) ($input['item_id'] ?? 0) ?: null,
+            'category_id'   => $categoryId,
+            'item_id'       => $itemId,
             'asset_id'      => $assetId,
             'qty'           => $qty,
             'subject'       => mb_substr($subject, 0, 191),
@@ -332,6 +355,12 @@ class Ams_people_model extends App_Model
         $id  = (int) $this->db->insert_id();
         $num = strtoupper(trim((string) get_option('ams_request_prefix')) ?: 'REQ') . '-' . str_pad((string) $id, 5, '0', STR_PAD_LEFT);
         $this->db->where('id', $id)->update($this->t('ams_requests'), ['request_no' => $num]);
+        if ($this->db->trans_status() === false) {
+            $this->db->trans_rollback();
+
+            return ['success' => false, 'message' => _l('ams_db_error')];
+        }
+        $this->db->trans_commit();
 
         $this->notify_approvers($this->get_request($id));
         log_activity('AMS request created [' . $num . ']');
@@ -339,11 +368,33 @@ class Ams_people_model extends App_Model
         return ['success' => true, 'id' => $id, 'message' => _l('ams_req_submitted', $num)];
     }
 
+    /**
+     * The department whose approvers handle a request: the requester's primary Perfex
+     * department, or else the first of their other departments that has an approver
+     * (other than the requester). Stored on the request.
+     */
+    private function approval_department($staffId)
+    {
+        $primary = ams_staff_primary_department($staffId);
+        if ($primary && $this->department_approvers($primary, $staffId)) {
+            return $primary;
+        }
+        $depts = array_map('intval', array_column($this->db->select('departmentid')->where('staffid', (int) $staffId)
+            ->order_by('departmentid', 'asc')->get($this->t('staff_departments'))->result_array(), 'departmentid'));
+        foreach ($depts as $dept) {
+            if ($this->department_approvers($dept, $staffId)) {
+                return $dept;
+            }
+        }
+
+        return $primary;
+    }
+
     /** Stage 1: department approvers of the requester's Perfex department; stage 2: staff with "approve". */
     private function notify_approvers($req)
     {
         $recipients = $req->status === 'pending_dept'
-            ? $this->department_approvers($req->department_id)
+            ? $this->department_approvers($req->department_id, $req->staff_id)
             : ams_staff_with_capability('ams_requests', 'approve');
 
         ams_notify($recipients, 'ams_notify_request_pending', [$req->request_no, get_staff_full_name($req->staff_id)], 'asset_management/requests/view/' . (int) $req->id);
@@ -403,7 +454,7 @@ class Ams_people_model extends App_Model
 
         // Department stage by a department approver; anyone with "approve" gives the final decision directly.
         if ($req->status === 'pending_dept' && staff_cant('approve', 'ams_requests')) {
-            $this->db->where('id', (int) $id)->update($this->t('ams_requests'), [
+            $this->db->where('id', (int) $id)->where('status', $req->status)->update($this->t('ams_requests'), [
                 'status'           => $approve ? 'pending_manager' : 'rejected',
                 'dept_approver_id' => get_staff_user_id(),
                 'dept_decision_at' => $now,
@@ -411,7 +462,7 @@ class Ams_people_model extends App_Model
             ]);
         } else {
             // A manager deciding (also allowed to decide a request still at department stage).
-            $this->db->where('id', (int) $id)->update($this->t('ams_requests'), [
+            $this->db->where('id', (int) $id)->where('status', $req->status)->update($this->t('ams_requests'), [
                 'status'        => $approve ? 'approved' : 'rejected',
                 'approver_id'   => get_staff_user_id(),
                 'decision_at'   => $now,
@@ -419,6 +470,9 @@ class Ams_people_model extends App_Model
             ]);
         }
 
+        if ($this->db->affected_rows() !== 1) {
+            return ['success' => false, 'message' => _l('ams_changed_meanwhile')];
+        }
         $req = $this->get_request($id);
         if ($req->status === 'pending_manager') {
             $this->notify_approvers($req);
@@ -435,11 +489,32 @@ class Ams_people_model extends App_Model
      */
     public function fulfil($id, $input)
     {
-        $req = $this->get_request($id);
+        // Lock the request for the whole fulfilment: a double submit waits, then finds it fulfilled.
+        $this->db->trans_begin();
+        $req = $this->db->query('SELECT * FROM ' . $this->t('ams_requests') . ' WHERE id = ? FOR UPDATE', [(int) $id])->row();
         if (! $req || $req->status !== 'approved') {
+            $this->db->trans_rollback();
+
             return ['success' => false, 'message' => _l('ams_req_not_approved')];
         }
+        $result = $this->fulfil_locked($req, $input);
+        if (! $result['success'] || $this->db->trans_status() === false) {
+            $this->db->trans_rollback();
 
+            return $result['success'] ? ['success' => false, 'message' => _l('ams_db_error')] : $result;
+        }
+        $this->db->trans_commit();
+
+        $req = $this->get_request($id);
+        $this->notify_requester($req, (string) $req->fulfilment_note);
+        log_activity('AMS request ' . $req->request_no . ' fulfilled');
+
+        return ['success' => true, 'message' => _l('ams_req_fulfilled_msg', $req->request_no)];
+    }
+
+    private function fulfil_locked($req, $input)
+    {
+        $id     = (int) $req->id;
         $note   = trim((string) ($input['fulfilment_note'] ?? '')) ?: null;
         $update = ['fulfilled_by' => get_staff_user_id(), 'fulfilled_at' => date('Y-m-d H:i:s'), 'fulfilment_note' => $note, 'status' => 'fulfilled'];
 
@@ -464,6 +539,13 @@ class Ams_people_model extends App_Model
             if (! $item) {
                 return ['success' => false, 'message' => _l('ams_field_required', _l('ams_item'))];
             }
+            // The item must be of the kind requested, and no more than was asked for.
+            if ($item->kind !== $req->type) {
+                return ['success' => false, 'message' => _l('ams_invalid_value', _l('ams_item'))];
+            }
+            if ((float) ($input['qty'] ?? $req->qty) > (float) $req->qty + 0.0001) {
+                return ['success' => false, 'message' => _l('ams_req_qty_above_requested', ams_qty($req->qty))];
+            }
             $op = $item->kind === 'accessory' ? 'checkout' : 'issue';
             if (! ams_item_can($op, $item->kind)) {
                 return ['success' => false, 'message' => _l('access_denied')];
@@ -484,11 +566,8 @@ class Ams_people_model extends App_Model
         }
 
         $this->db->where('id', (int) $id)->update($this->t('ams_requests'), $update);
-        $req = $this->get_request($id);
-        $this->notify_requester($req, (string) $note);
-        log_activity('AMS request ' . $req->request_no . ' fulfilled');
 
-        return ['success' => true, 'message' => _l('ams_req_fulfilled_msg', $req->request_no)];
+        return ['success' => true];
     }
 
     public function cancel($id)
@@ -497,7 +576,17 @@ class Ams_people_model extends App_Model
         if (! $req || (int) $req->staff_id !== (int) get_staff_user_id() || ! in_array($req->status, ['pending_dept', 'pending_manager'])) {
             return ['success' => false, 'message' => _l('access_denied')];
         }
-        $this->db->where('id', (int) $id)->update($this->t('ams_requests'), ['status' => 'cancelled']);
+        $this->db->where('id', (int) $id)->where_in('status', ['pending_dept', 'pending_manager'])->update($this->t('ams_requests'), ['status' => 'cancelled']);
+        if ($this->db->affected_rows() !== 1) {
+            return ['success' => false, 'message' => _l('ams_changed_meanwhile')];
+        }
+        log_activity('AMS request cancelled by requester [' . $req->request_no . ']');
+
+        // Tell whoever was asked to decide that it is no longer needed.
+        $approvers = $req->status === 'pending_dept'
+            ? $this->department_approvers($req->department_id, $req->staff_id)
+            : ams_staff_with_capability('ams_requests', 'approve');
+        ams_notify($approvers, 'ams_notify_request_cancelled', [$req->request_no, get_staff_full_name($req->staff_id)], 'asset_management/requests/view/' . (int) $req->id);
 
         return ['success' => true, 'message' => _l('ams_req_cancelled_msg')];
     }
@@ -505,10 +594,15 @@ class Ams_people_model extends App_Model
     public function delete_request($id)
     {
         $req = $this->get_request($id);
-        if (! $req) {
+        // Approved / fulfilled requests are the approval trail of what was handed out: keep them.
+        if (! $req || in_array($req->status, ['approved', 'fulfilled'], true)) {
             return false;
         }
+        $this->db->trans_begin();
+        $this->db->where('request_id', (int) $id)->update($this->t('ams_purchase_orders'), ['request_id' => null]);
+        $this->db->where('request_id', (int) $id)->update($this->t('ams_maintenance'), ['request_id' => null]);
         $this->db->where('id', (int) $id)->delete($this->t('ams_requests'));
+        $this->db->trans_status() === false ? $this->db->trans_rollback() : $this->db->trans_commit();
         log_activity('AMS request deleted [' . $req->request_no . ']');
 
         return true;

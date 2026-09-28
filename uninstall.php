@@ -60,6 +60,9 @@ $CI->db->delete($p . 'staff_permissions');
 
 $CI->db->where('type', 'ams')->delete($p . 'emailtemplates');
 
+// Bell notifications of this module would show raw language keys once it is gone.
+$CI->db->like('description', 'ams_notify_', 'after')->delete($p . 'notifications');
+
 $fields = $CI->db->where_in('fieldto', ['ams_assets', 'ams_items'])->get($p . 'customfields')->result_array();
 foreach ($fields as $field) {
     $CI->db->where('fieldid', $field['id'])->delete($p . 'customfieldsvalues');

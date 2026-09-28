@@ -28,7 +28,7 @@ $tile  = fn ($key, $n, $cls = '') => '<div class="col-md-2 col-sm-4 col-xs-6"><d
             </div>
             <div class="tw-flex tw-flex-wrap tw-gap-1">
                 <?php if ($canEdit && $au->status === 'draft') { ?>
-                <a href="#" class="btn btn-success" onclick="ams_audit_post('start'); return false;"><i class="fa-solid fa-play tw-mr-1"></i><?= _l('ams_audit_start'); ?></a>
+                <a href="#" class="btn btn-success" onclick="ams_audit_post('start'); return false;"><i class="fa-solid fa-play tw-mr-1"></i><?= _l('ams_audit_start'); ?></a><?= ams_help_icon(_l('ams_audit_draft_help')); ?>
                 <?php } ?>
                 <?php if ($canEdit && $running) { ?>
                 <?php if ($scanning) { ?>
@@ -51,9 +51,6 @@ $tile  = fn ($key, $n, $cls = '') => '<div class="col-md-2 col-sm-4 col-xs-6"><d
         <?php if ($scanning && $running) { ?>
         <div class="alert alert-warning"><i class="fa-solid fa-mobile-screen tw-mr-1"></i><?= _l('ams_audit_scan_mode_banner'); ?></div>
         <?php } ?>
-        <?php if ($au->status === 'draft') { ?>
-        <div class="alert alert-info"><?= _l('ams_audit_draft_help'); ?></div>
-        <?php } ?>
 
         <?php if ($au->status !== 'draft') { ?>
         <div class="row">
@@ -71,7 +68,7 @@ $tile  = fn ($key, $n, $cls = '') => '<div class="col-md-2 col-sm-4 col-xs-6"><d
             <div class="panel-body">
                 <form id="ams-audit-scan" class="row" autocomplete="off">
                     <div class="col-md-5">
-                        <label class="control-label" for="ams_scan_code"><?= _l('ams_audit_scan_code'); ?></label>
+                        <label class="control-label" for="ams_scan_code"><?= _l('ams_audit_scan_code') . ams_help_icon(_l('ams_audit_scan_help')); ?></label>
                         <input type="text" id="ams_scan_code" name="code" class="form-control input-lg" placeholder="<?= e(_l('ams_audit_scan_placeholder')); ?>" autofocus>
                     </div>
                     <div class="col-md-3"><?= render_select('found_location_id', $locations, ['id', 'name'], 'ams_audit_found_at'); ?></div>
@@ -80,7 +77,7 @@ $tile  = fn ($key, $n, $cls = '') => '<div class="col-md-2 col-sm-4 col-xs-6"><d
                         <label class="control-label">&nbsp;</label>
                         <button type="submit" class="btn btn-primary btn-block"><?= _l('ams_audit_record'); ?></button>
                     </div>
-                    <div class="col-md-12"><p class="text-muted tw-text-sm tw-mb-0" id="ams_scan_feedback"><?= _l('ams_audit_scan_help'); ?></p></div>
+                    <div class="col-md-12"><p class="text-muted tw-text-sm tw-mb-0" id="ams_scan_feedback"></p></div>
                 </form>
             </div>
         </div>
@@ -123,10 +120,9 @@ $tile  = fn ($key, $n, $cls = '') => '<div class="col-md-2 col-sm-4 col-xs-6"><d
         <div class="modal-content">
             <div class="modal-header">
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-                <h4 class="modal-title"><?= _l('ams_audit_complete'); ?> - <?= e($au->audit_no); ?></h4>
+                <h4 class="modal-title"><?= _l('ams_audit_complete'); ?> - <?= e($au->audit_no) . ams_help_icon(_l('ams_audit_complete_help', (int) $c['pending'])); ?></h4>
             </div>
             <div class="modal-body">
-                <p><?= _l('ams_audit_complete_help', (int) $c['pending']); ?></p>
                 <div class="checkbox checkbox-primary">
                     <input type="checkbox" name="move_misplaced" id="ams_move_misplaced" value="1" checked>
                     <label for="ams_move_misplaced"><?= _l('ams_audit_move_misplaced'); ?></label>

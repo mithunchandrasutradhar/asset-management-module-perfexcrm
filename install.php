@@ -349,9 +349,11 @@ if (! $CI->db->table_exists($p . 'ams_item_checkouts')) {
     ) " . $engine);
 }
 
-// ─── HostBill integration (schema v3) ─────────────────────────────────────
+// ─── HostBill inventory (read-only; schema v3, reduced in v7) ─────────────
+// HostBill owns its product stock; Perfex only keeps a copy to show it and to
+// raise low / out-of-stock alerts. low_level = per-product level (NULL = the
+// default from settings); alert_state = ok | low | out (last alert sent).
 
-// Local cache of HostBill products (for the mapping screen and reconciliation).
 if (! $CI->db->table_exists($p . 'ams_hb_products')) {
     $CI->db->query('CREATE TABLE `' . $p . "ams_hb_products` (
         `hb_product_id` INT(11) NOT NULL,
@@ -365,82 +367,21 @@ if (! $CI->db->table_exists($p . 'ams_hb_products')) {
         PRIMARY KEY (`hb_product_id`)
     ) " . $engine);
 }
-
-// HostBill product -> Perfex stock item. units per HostBill unit = qty_multiplier.
-if (! $CI->db->table_exists($p . 'ams_hb_product_map')) {
-    $CI->db->query('CREATE TABLE `' . $p . "ams_hb_product_map` (
-        `id` INT(11) NOT NULL AUTO_INCREMENT,
-        `item_id` INT(11) NOT NULL,
-        `hb_product_id` INT(11) NOT NULL,
-        `qty_multiplier` DECIMAL(15,2) NOT NULL DEFAULT 1,
-        `location_id` INT(11) NULL,
-        `push_stock` TINYINT(1) NOT NULL DEFAULT 1,
-        `push_pending` TINYINT(1) NOT NULL DEFAULT 1,
-        `last_pushed_qty` DECIMAL(15,2) NULL,
-        `last_pushed_at` DATETIME NULL,
-        `last_push_error` TEXT NULL,
-        `active` TINYINT(1) NOT NULL DEFAULT 1,
-        `created_by` INT(11) NULL,
-        `date_created` DATETIME NOT NULL,
-        PRIMARY KEY (`id`),
-        UNIQUE KEY `hb_product_id` (`hb_product_id`),
-        KEY `item_id` (`item_id`)
-    ) " . $engine);
+if (! $CI->db->field_exists('low_level', $p . 'ams_hb_products')) {
+    $CI->db->query('ALTER TABLE `' . $p . 'ams_hb_products`
+        ADD `low_level` DECIMAL(15,2) NULL,
+        ADD `alert_state` VARCHAR(10) NOT NULL DEFAULT \'ok\',
+        ADD `alerted_at` DATETIME NULL,
+        ADD `is_removed` TINYINT(1) NOT NULL DEFAULT 0,
+        ADD KEY `is_removed` (`is_removed`)');
 }
 
-if (! $CI->db->table_exists($p . 'ams_hb_orders')) {
-    $CI->db->query('CREATE TABLE `' . $p . "ams_hb_orders` (
-        `id` INT(11) NOT NULL AUTO_INCREMENT,
-        `hb_order_id` INT(11) NOT NULL,
-        `order_number` VARCHAR(60) NULL,
-        `hb_client_id` INT(11) NULL,
-        `client_name` VARCHAR(191) NULL,
-        `client_email` VARCHAR(191) NULL,
-        `perfex_client_id` INT(11) NULL,
-        `status` VARCHAR(30) NULL,
-        `invoice_status` VARCHAR(30) NULL,
-        `balance` VARCHAR(30) NULL,
-        `total` DECIMAL(15,2) NULL,
-        `currency_id` INT(11) NULL,
-        `order_date` DATETIME NULL,
-        `has_mapped` TINYINT(1) NOT NULL DEFAULT 0,
-        `needs_attention` TINYINT(1) NOT NULL DEFAULT 0,
-        `fulfilment` VARCHAR(20) NOT NULL DEFAULT 'pending',
-        `fulfilment_note` TEXT NULL,
-        `fulfilled_by` INT(11) NULL,
-        `fulfilled_at` DATETIME NULL,
-        `raw_json` LONGTEXT NULL,
-        `last_synced_at` DATETIME NULL,
-        `date_created` DATETIME NOT NULL,
-        PRIMARY KEY (`id`),
-        UNIQUE KEY `hb_order_id` (`hb_order_id`),
-        KEY `status` (`status`),
-        KEY `perfex_client_id` (`perfex_client_id`),
-        KEY `order_date` (`order_date`)
-    ) " . $engine);
-}
-
-// One row per HostBill order line. state = what Perfex currently holds for it:
-// none | reserved | deducted | released | returned | short | unmapped | ignored
-if (! $CI->db->table_exists($p . 'ams_hb_order_lines')) {
-    $CI->db->query('CREATE TABLE `' . $p . "ams_hb_order_lines` (
-        `id` INT(11) NOT NULL AUTO_INCREMENT,
-        `hb_order_id` INT(11) NOT NULL,
-        `line_key` VARCHAR(60) NOT NULL,
-        `hb_product_id` INT(11) NULL,
-        `product_name` VARCHAR(191) NULL,
-        `hb_qty` DECIMAL(15,2) NOT NULL DEFAULT 1,
-        `item_id` INT(11) NULL,
-        `units` DECIMAL(15,2) NULL,
-        `location_id` INT(11) NULL,
-        `state` VARCHAR(20) NOT NULL DEFAULT 'none',
-        `message` VARCHAR(255) NULL,
-        `date_updated` DATETIME NULL,
-        PRIMARY KEY (`id`),
-        UNIQUE KEY `order_line` (`hb_order_id`, `line_key`),
-        KEY `item_id` (`item_id`),
-        KEY `state` (`state`)
-    ) " . $engine);
+// v7: order sync, product mapping, stock push and the webhook were removed.
+// Their tables are dropped only when empty, so no recorded data is ever lost.
+foreach (['ams_hb_order_lines', 'ams_hb_orders', 'ams_hb_product_map'] as $oldTable) {
+    if ($CI->db->table_exists($p . $oldTable) && $CI->db->count_all($p . $oldTable) == 0) {
+        $CI->db->query('DROP TABLE `' . $p . $oldTable . '`');
+    }
 }
 
 if (! $CI->db->table_exists($p . 'ams_hb_sync_log')) {
@@ -825,7 +766,7 @@ $amsTemplates = [
         '<p>Hi {staff_firstname},</p><p><strong>{ams_item}</strong> was due back on {ams_due_date}. Please return it or contact the asset manager.</p><p><a href="{ams_link}">{ams_link}</a></p>'],
     ['ams-low-stock', 'Low / out-of-stock alert', 'Stock alert: {ams_item}',
         '<p>{ams_item} is <strong>{ams_status}</strong>: {ams_details} available.</p><p><a href="{ams_link}">{ams_link}</a></p>'],
-    ['ams-system-alert', 'HostBill sync / push failure alert', 'Asset Management alert: {ams_status}',
+    ['ams-system-alert', 'HostBill inventory refresh alert', 'Asset Management alert: {ams_status}',
         '<p>{ams_details}</p><p><a href="{ams_link}">{ams_link}</a></p>'],
     ['ams-purchase-order', 'Purchase order (to supplier)', 'Purchase Order {ams_po_number} from {ams_company}',
         '<p>Dear {ams_supplier},</p><p>Please find attached our purchase order <strong>{ams_po_number}</strong>.</p><p>{ams_details}</p><p>Kind regards,<br>{ams_company}</p>'],
@@ -837,6 +778,8 @@ $amsTemplates = [
 foreach ($amsTemplates as $tpl) {
     create_email_template($tpl[2], $tpl[3], 'ams', $tpl[1], $tpl[0]);
 }
+// Stock push was removed: rename the old template (subject and body are left as edited).
+$CI->db->query('UPDATE ' . $p . 'emailtemplates SET name = REPLACE(name, "HostBill sync / push failure alert", "HostBill inventory refresh alert") WHERE slug = "ams-system-alert"');
 
 // ─── Seed statuses (legacy set + retired) ─────────────────────────────────
 
@@ -880,32 +823,39 @@ add_option('ams_item_sku_prefix', 'ITM');
 add_option('ams_block_negative_stock', '1');
 add_option('ams_low_stock_notify_staff', '[]');
 
-// HostBill (all editable in Setup → Settings → Asset Management → HostBill)
+// HostBill inventory (all editable in Assets → Setup → HostBill Settings)
 add_option('ams_hb_enabled', '0');
 add_option('ams_hb_url', '');
 add_option('ams_hb_api_id', '');
 add_option('ams_hb_api_key', '');
 add_option('ams_hb_verify_ssl', '1');
 add_option('ams_hb_timeout', '20');
-add_option('ams_hb_sync_enabled', '1');
-add_option('ams_hb_sync_interval', '10');
-add_option('ams_hb_lookback_days', '14');
-add_option('ams_hb_max_pages', '10');
-add_option('ams_hb_reserve_on_pending', '1');
-add_option('ams_hb_deduct_on', 'paid');
-add_option('ams_hb_release_on_refund', '1');
-add_option('ams_hb_restock_on_cancel', '1');
-add_option('ams_hb_sales_location_id', '');
-add_option('ams_hb_push_enabled', '1');
-add_option('ams_hb_push_immediately', '1');
-add_option('ams_hb_stock_buffer', '0');
-add_option('ams_hb_webhook_enabled', '0');
-add_option('ams_hb_webhook_secret', bin2hex(random_bytes(20)));
-add_option('ams_hb_webhook_ips', '');
+add_option('ams_hb_sync_enabled', '1');          // automatic refresh
+add_option('ams_hb_sync_interval', '30');        // minutes
+add_option('ams_hb_product_scope', 'tracked');   // tracked | all
+add_option('ams_hb_include_hidden', '0');
+add_option('ams_hb_default_low_level', '5');
+add_option('ams_hb_allow_override', '1');
+add_option('ams_hb_alert_low', '1');
+add_option('ams_hb_alert_out', '1');
+add_option('ams_hb_alert_sync_fail', '1');
+add_option('ams_hb_alert_email', '1');
+add_option('ams_hb_alert_recipients', 'hostbill'); // hostbill (own list) | stock (same as stock alerts)
 add_option('ams_hb_alert_staff', '[]');
 add_option('ams_hb_log_retention_days', '30');
 add_option('ams_hb_last_sync', '');
 add_option('ams_hb_last_sync_status', '');
+add_option('ams_hb_last_sync_message', '');
+
+// v7: options of the removed order sync / stock push / webhook.
+foreach (['ams_hb_lookback_days', 'ams_hb_max_pages', 'ams_hb_reserve_on_pending', 'ams_hb_deduct_on', 'ams_hb_release_on_refund',
+    'ams_hb_restock_on_cancel', 'ams_hb_sales_location_id', 'ams_hb_push_enabled', 'ams_hb_push_immediately', 'ams_hb_stock_buffer',
+    'ams_hb_webhook_enabled', 'ams_hb_webhook_secret', 'ams_hb_webhook_ips'] as $oldOption) {
+    delete_option($oldOption);
+}
+
+// Stock items: the "Sellable" flag is optional (Assets → Setup → General Settings).
+add_option('ams_item_sellable_enabled', '0');
 
 // People workflows
 add_option('ams_acceptance_mode', 'always');

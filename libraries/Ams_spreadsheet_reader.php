@@ -10,6 +10,9 @@ defined('BASEPATH') or exit('No direct script access allowed');
  */
 class Ams_spreadsheet_reader
 {
+    /** Largest unpacked sheet / shared-strings part accepted (bytes). */
+    private const MAX_UNPACKED = 50 * 1024 * 1024;
+
     /** @return array ['rows' => [[...], ...]] or ['error' => message] */
     public function read($path, $originalName, $maxRows = 5000)
     {
@@ -84,6 +87,15 @@ class Ams_spreadsheet_reader
         }
 
         $sheetPath = $this->first_sheet_path($zip);
+        // A small .xlsx can unpack to gigabytes: check the real sizes before reading.
+        foreach (array_filter([$sheetPath, 'xl/sharedStrings.xml']) as $part) {
+            $stat = $zip->statName($part);
+            if ($stat && $stat['size'] > self::MAX_UNPACKED) {
+                $zip->close();
+
+                return _l('ams_import_file_too_large');
+            }
+        }
         $sheetXml  = $sheetPath ? $zip->getFromName($sheetPath) : false;
         if ($sheetXml === false) {
             $zip->close();

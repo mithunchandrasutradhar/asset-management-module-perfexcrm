@@ -16,8 +16,6 @@ return App_table::find('ams_levels')
             'IF(pc.id IS NULL, c.name, CONCAT(pc.name, " › ", c.name)) as category_name',
             'IF(pl.id IS NULL, l.name, CONCAT(pl.name, " › ", l.name)) as location_name',
             $t . '.on_hand as on_hand',
-            $t . '.reserved as reserved',
-            '(' . $t . '.on_hand - ' . $t . '.reserved) as available',
             '(' . $t . '.on_hand * IFNULL(i.cost, 0)) as stock_value',
         ];
 
@@ -32,7 +30,7 @@ return App_table::find('ams_levels')
         $kinds = ams_item_viewable_kinds() ?: ['-'];
         $where = [
             'AND i.kind IN ("' . implode('","', $kinds) . '")',
-            'AND (' . $t . '.on_hand <> 0 OR ' . $t . '.reserved <> 0)',
+            'AND ' . $t . '.on_hand <> 0',
         ];
 
         if ($filtersWhere = $this->getWhereFromRules()) {
@@ -53,9 +51,7 @@ return App_table::find('ams_levels')
             $row[] = e(_l($kinds[$aRow['kind']]['singular'] ?? $aRow['kind']));
             $row[] = e($aRow['category_name']);
             $row[] = e($aRow['location_name']);
-            $row[] = ams_qty($aRow['on_hand']) . ' <span class="text-muted tw-text-xs">' . e($aRow['unit']) . '</span>';
-            $row[] = ams_qty($aRow['reserved']);
-            $row[] = '<span class="tw-font-semibold">' . ams_qty($aRow['available']) . '</span>';
+            $row[] = '<span class="tw-font-semibold">' . ams_qty($aRow['on_hand']) . '</span> <span class="text-muted tw-text-xs">' . e($aRow['unit']) . '</span>';
             $row[] = e(app_format_money($aRow['stock_value'], $cur));
 
             $output['aaData'][] = $row;

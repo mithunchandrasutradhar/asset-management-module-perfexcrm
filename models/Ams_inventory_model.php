@@ -98,16 +98,23 @@ class Ams_inventory_model extends App_Model
             'reorder_level'       => (float) $this->decimal($input['reorder_level'] ?? '0'),
             'reorder_qty'         => (float) $this->decimal($input['reorder_qty'] ?? '0'),
             'default_location_id' => (int) ($input['default_location_id'] ?? 0) ?: null,
-            'is_sellable'         => ! empty($input['is_sellable']) ? 1 : 0,
             'description'         => trim($input['description'] ?? '') ?: null,
             'notes'               => trim($input['notes'] ?? '') ?: null,
             'active'              => ! empty($input['active']) ? 1 : 0,
         ];
+        // The "Sellable" flag is optional (setting): when it is switched off the form has no
+        // such field, so an existing item keeps its value instead of being reset.
+        if (get_option('ams_item_sellable_enabled') == '1') {
+            $data['is_sellable'] = ! empty($input['is_sellable']) ? 1 : 0;
+        } elseif (! $old) {
+            $data['is_sellable'] = 0;
+        }
 
         if ($data['name'] === '') {
             return ['success' => false, 'message' => _l('ams_field_required', _l('ams_item_name'))];
         }
-        if ($data['reorder_level'] < 0 || $data['reorder_qty'] < 0 || ($data['cost'] !== null && $data['cost'] < 0)) {
+        if ($data['reorder_level'] < 0 || $data['reorder_qty'] < 0 || ($data['cost'] !== null && $data['cost'] < 0)
+            || ($data['sale_price'] !== null && $data['sale_price'] < 0)) {
             return ['success' => false, 'message' => _l('ams_negative_not_allowed')];
         }
 
@@ -150,6 +157,9 @@ class Ams_inventory_model extends App_Model
         }
         if ($openingQty > 0 && ! $openingLoc) {
             return ['success' => false, 'message' => _l('ams_field_required', _l('ams_location'))];
+        }
+        if (($data['default_location_id'] && ! $this->location_exists($data['default_location_id'])) || ($openingQty > 0 && ! $this->location_exists($openingLoc))) {
+            return ['success' => false, 'message' => _l('ams_invalid_value', _l('ams_location'))];
         }
 
         $this->db->trans_begin();
@@ -201,11 +211,29 @@ class Ams_inventory_model extends App_Model
         if (total_rows($this->t('ams_stock_movements'), ['item_id' => (int) $id]) > 0) {
             return ['success' => false, 'message' => _l('ams_item_has_movements')];
         }
+        // Purchase-order lines and requests point at the item; deleting it would break them.
+        $used = [];
+        if (total_rows($this->t('ams_po_lines'), ['item_id' => (int) $id]) > 0) {
+            $used[] = _l('ams_purchase_orders');
+        }
+        if (total_rows($this->t('ams_requests'), ['item_id' => (int) $id]) > 0) {
+            $used[] = _l('ams_requests');
+        }
+        if ($used) {
+            return ['success' => false, 'message' => _l('ams_in_use_by', [_l('ams_item'), implode(', ', $used)])];
+        }
 
+        $this->db->trans_begin();
         $this->db->where('id', (int) $id)->delete($this->t('ams_items'));
         $this->db->where('item_id', (int) $id)->delete($this->t('ams_stock_levels'));
         $this->db->where('relid', (int) $id)->where('fieldto', 'ams_items')->delete($this->t('customfieldsvalues'));
         $this->audit($id, 'delete', ['sku' => [$item->sku, null], 'name' => [$item->name, null]]);
+        if ($this->db->trans_status() === false) {
+            $this->db->trans_rollback();
+
+            return ['success' => false, 'message' => _l('ams_db_error')];
+        }
+        $this->db->trans_commit();
         log_activity('AMS item deleted [ID: ' . $id . ', SKU: ' . $item->sku . ']');
 
         return ['success' => true, 'message' => _l('deleted', _l('ams_item'))];
@@ -377,7 +405,8 @@ class Ams_inventory_model extends App_Model
         }
 
         $outstanding = (float) $co->qty - (float) $co->returned_qty;
-        $qty         = (float) $this->decimal($input['qty'] ?? '') ?: $outstanding;
+        // Empty = return everything outstanding; an explicit 0 is refused below.
+        $qty         = trim((string) ($input['qty'] ?? '')) === '' ? $outstanding : (float) $this->decimal($input['qty']);
         $loc         = (int) ($input['location_id'] ?? 0) ?: (int) $co->location_id;
 
         if ($qty <= 0 || $qty > $outstanding) {
@@ -390,11 +419,17 @@ class Ams_inventory_model extends App_Model
         $closed = abs($outstanding - $qty) < 0.0001;
 
         $result = $this->transaction(function () use ($co, $qty, $loc, $closed, $input) {
-            $this->db->where('id', (int) $co->id)->update($this->t('ams_item_checkouts'), [
-                'returned_qty' => (float) $co->returned_qty + $qty,
-                'status'       => $closed ? 'closed' : 'open',
-                'date_closed'  => $closed ? date('Y-m-d H:i:s') : null,
-            ]);
+            // Conditional on the quantity read above: a simultaneous return of the
+            // same check-out updates nothing and is refused instead of adding stock twice.
+            $this->db->where('id', (int) $co->id)->where('status', 'open')->where('returned_qty', $co->returned_qty)
+                ->update($this->t('ams_item_checkouts'), [
+                    'returned_qty' => (float) $co->returned_qty + $qty,
+                    'status'       => $closed ? 'closed' : 'open',
+                    'date_closed'  => $closed ? date('Y-m-d H:i:s') : null,
+                ]);
+            if ($this->db->affected_rows() !== 1) {
+                return _l('ams_changed_meanwhile');
+            }
 
             return $this->move($co->item_id, $loc, $qty, 'return', [
                 'ref_type'      => 'checkout',
@@ -477,60 +512,24 @@ class Ams_inventory_model extends App_Model
     }
 
     /**
-     * HostBill order operations, called by Ams_hostbill_model inside ITS transaction.
-     * reserve (+reserved) | release (-reserved) | sale (-on hand) | sale_return (+on hand).
+     * The only writer of stock. Must run inside a transaction.
+     * Locks the level row, refuses to take more than is available when negative
+     * stock is blocked, writes the ledger row and updates the cached on-hand level.
+     * (The "reserved" column is left from the old HostBill reservations and stays 0.)
      * Returns true or an error message.
      */
-    public function hb_operation($op, $itemId, $locationId, $units, $extra = [])
-    {
-        $units = abs((float) $units);
-        $extra = array_merge(['ref_type' => 'hostbill_order'], $extra);
-
-        switch ($op) {
-            case 'reserve':
-                return $this->move($itemId, $locationId, $units, 'reserve', $extra, 'reserved');
-            case 'release':
-                return $this->move($itemId, $locationId, -$units, 'release', $extra, 'reserved');
-            case 'sale':
-                return $this->move($itemId, $locationId, -$units, 'sale', $extra);
-            case 'sale_return':
-                return $this->move($itemId, $locationId, $units, 'sale_return', $extra);
-        }
-
-        return _l('ams_invalid_request');
-    }
-
-    /** Items touched by hb_operation() calls, for the caller to alert/push after commit. */
-    public function take_touched_items()
-    {
-        return $this->touched_items();
-    }
-
-    /**
-     * The only writer of stock. Must run inside a transaction.
-     * Locks the level row, refuses to take more than is available (on hand
-     * minus reserved) when negative stock is blocked, writes the ledger row and
-     * updates the cached level. $column is 'on_hand' or 'reserved' (HostBill
-     * reservations). Returns true or an error message.
-     */
-    private function move($itemId, $locationId, $qty, $type, $extra = [], $column = 'on_hand')
+    private function move($itemId, $locationId, $qty, $type, $extra = [])
     {
         $levels = $this->t('ams_stock_levels');
-        $column = $column === 'reserved' ? 'reserved' : 'on_hand';
 
         $this->db->query('INSERT IGNORE INTO ' . $levels . ' (item_id, location_id, on_hand, reserved) VALUES (?, ?, 0, 0)', [(int) $itemId, (int) $locationId]);
         $level = $this->db->query('SELECT on_hand, reserved FROM ' . $levels . ' WHERE item_id = ? AND location_id = ? FOR UPDATE', [(int) $itemId, (int) $locationId])->row();
 
-        // Taking stock = lowering on hand, or raising reserved; both reduce "available".
-        $reducesAvailable = ($column === 'on_hand' && $qty < 0) || ($column === 'reserved' && $qty > 0);
-        if ($reducesAvailable && get_option('ams_block_negative_stock') == '1') {
+        if ($qty < 0 && get_option('ams_block_negative_stock') == '1') {
             $available = (float) $level->on_hand - (float) $level->reserved;
             if ($available - abs($qty) < -0.0001) {
                 return _l('ams_insufficient_stock', [ams_qty($available), e(ams_location_name($locationId))]);
             }
-        }
-        if ($column === 'reserved' && $qty < 0 && (float) $level->reserved + $qty < -0.0001) {
-            return _l('ams_release_exceeds_reserved');
         }
 
         $this->db->insert($this->t('ams_stock_movements'), array_merge([
@@ -544,7 +543,7 @@ class Ams_inventory_model extends App_Model
         $this->lastMovementId = (int) $this->db->insert_id();
         $this->touched[]      = (int) $itemId;
 
-        $this->db->query('UPDATE ' . $levels . ' SET ' . $column . ' = ' . $column . ' + ? WHERE item_id = ? AND location_id = ?', [$qty, (int) $itemId, (int) $locationId]);
+        $this->db->query('UPDATE ' . $levels . ' SET on_hand = on_hand + ? WHERE item_id = ? AND location_id = ?', [$qty, (int) $itemId, (int) $locationId]);
 
         hooks()->do_action('ams_after_stock_movement', ['item_id' => (int) $itemId, 'location_id' => (int) $locationId, 'qty' => $qty, 'type' => $type]);
 
@@ -560,6 +559,9 @@ class Ams_inventory_model extends App_Model
      */
     public function check_stock_alert($itemId)
     {
+        if (! empty($GLOBALS['ams_import_silent'])) {
+            return; // bulk import without notifications
+        }
         $item = $this->db->where('id', (int) $itemId)->get($this->t('ams_items'))->row();
         if (! $item || ! $item->active) {
             return;
@@ -621,7 +623,8 @@ class Ams_inventory_model extends App_Model
      */
     public function verify_levels($repair = false)
     {
-        // on_hand = all movements except reservations; reserved = reserve/release movements.
+        // on_hand = all movements except reservations; reserved = reserve/release movements
+        // (only from the old HostBill integration; new data has none).
         $mismatches = $this->db->query('SELECT m.item_id, m.location_id, m.total, m.reserved_total,
                 IFNULL(sl.on_hand, 0) cached, IFNULL(sl.reserved, 0) cached_reserved
             FROM (SELECT item_id, location_id,

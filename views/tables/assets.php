@@ -128,8 +128,11 @@ return App_table::find('ams_assets')
             $row[] = $aRow['purchase_cost'] !== null ? e(app_format_money($aRow['purchase_cost'], $aRow['currency_name'])) : '';
             $row[] = e(_d($aRow['purchase_date']));
 
-            foreach ($customFieldsColumns as $customFieldColumn) {
-                $row[] = (strpos($customFieldColumn, 'date_picker_') !== false ? _d($aRow[$customFieldColumn]) : $aRow[$customFieldColumn]);
+            // Custom field values are plain text typed by staff (links are the exception): escape them.
+            foreach ($customFieldsColumns as $i => $customFieldColumn) {
+                $cfType = $custom_fields[$i]['type'] ?? '';
+                $value  = strpos($customFieldColumn, 'date_picker_') !== false ? _d($aRow[$customFieldColumn]) : $aRow[$customFieldColumn];
+                $row[]  = $cfType === 'link' ? $value : e((string) $value);
             }
 
             $row['DT_RowClass'] = 'has-row-options';

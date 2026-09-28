@@ -104,7 +104,7 @@ return App_table::find('ams_items')
         }
 
         return $output;
-    })->setRules([
+    })->setRules(array_merge([
         App_table_filter::new('sku', 'TextRule')->label(_l('ams_sku')),
         App_table_filter::new('name', 'TextRule')->label(_l('ams_item_name')),
         App_table_filter::new('category_id', 'MultiSelectRule')->label(_l('ams_category'))
@@ -130,6 +130,5 @@ return App_table::find('ams_items')
             ->options(fn () => collect(['out', 'low', 'ok'])->map(fn ($s) => ['value' => $s, 'label' => _l('ams_stock_state_' . $s)])->all()),
         App_table_filter::new('reorder_level', 'NumberRule')->label(_l('ams_reorder_level')),
         App_table_filter::new('cost', 'NumberRule')->label(_l('ams_unit_cost')),
-        App_table_filter::new('is_sellable', 'BooleanRule')->label(_l('ams_is_sellable')),
         App_table_filter::new('active', 'BooleanRule')->label(_l('ams_active')),
-    ]);
+    ], get_option('ams_item_sellable_enabled') == '1' ? [App_table_filter::new('is_sellable', 'BooleanRule')->label(_l('ams_is_sellable'))] : []));

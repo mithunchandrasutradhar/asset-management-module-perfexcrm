@@ -17,7 +17,7 @@ class Import extends AdminController
     public function __construct()
     {
         parent::__construct();
-        ams_post_only(['upload']);
+        ams_post_only(['upload', 'cancel']);
         if (! ams_can_import()) {
             access_denied('ams_assets');
         }
@@ -26,6 +26,8 @@ class Import extends AdminController
 
     public function index()
     {
+        $this->prune_temp_files();
+
         $data['title'] = _l('ams_import');
         $data['types'] = $this->ams_import_model->types();
         $data['max']   = self::MAX_ROWS;
@@ -104,11 +106,17 @@ class Import extends AdminController
                 set_alert('warning', _l('ams_import_map_required', implode(', ', array_map(fn ($k) => _l($fields[$k]['label']), $missing))));
             } else {
                 $commit = $action === 'import';
+                // Claim the file before importing: a double submit / second tab finds it gone.
+                $running = $this->path($job['token'], 'running');
+                if ($commit && ! @rename($this->path($job['token'], 'data'), $running)) {
+                    set_alert('warning', _l('ams_import_already_running'));
+                    redirect(admin_url('asset_management/import'));
+                }
                 $result = $this->ams_import_model->run($job['type'], $rows, $map, $options, $commit);
                 file_put_contents($this->path($job['token'], 'result'), json_encode(['rows' => $rows, 'headers' => $headers, 'result' => $result['results']]));
                 if ($commit) {
                     // The file is consumed: a refresh must not import it twice.
-                    @unlink($this->path($job['token'], 'data'));
+                    @unlink($running);
                     $this->session->set_userdata('ams_import', $job + ['done' => true]);
                 }
             }
@@ -193,6 +201,16 @@ class Import extends AdminController
         $file = $this->path($token, $kind);
 
         return is_file($file) ? json_decode((string) file_get_contents($file), true) : null;
+    }
+
+    /** Uploads left behind by abandoned imports hold company data: remove them after a day. */
+    private function prune_temp_files()
+    {
+        foreach (glob(rtrim(app_temp_dir(), '/\\') . '/ams_import_*.json') ?: [] as $file) {
+            if (is_file($file) && filemtime($file) < time() - 86400) {
+                @unlink($file);
+            }
+        }
     }
 
     private function clear()

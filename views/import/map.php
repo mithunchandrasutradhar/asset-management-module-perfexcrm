@@ -14,23 +14,20 @@ $ready  = $counts && $action === 'preview' && ($counts['create'] + $counts['upda
                 <a href="<?= admin_url('asset_management/import'); ?>" class="tw-text-neutral-500"><?= _l('ams_import'); ?></a> ›
                 <?= e($job['file']); ?> <span class="text-muted tw-font-normal">(<?= _l('ams_import_rows', (int) $total); ?>)</span>
             </h4>
-            <a href="<?= admin_url('asset_management/import/cancel'); ?>" class="btn btn-default"><?= $done ? _l('ams_import_new') : _l('cancel'); ?></a>
+            <a href="<?= admin_url('asset_management/import/cancel'); ?>" class="btn btn-default ams-post"><?= $done ? _l('ams_import_new') : _l('cancel'); ?></a>
         </div>
 
         <?php if ($counts) { ?>
         <div class="panel_s">
             <div class="panel-body">
                 <h4 class="tw-mt-0 tw-font-semibold tw-text-base">
-                    <?= $action === 'import' ? _l('ams_import_result_title') : _l('ams_import_preview_title'); ?>
+                    <?= $action === 'import' ? _l('ams_import_result_title') : _l('ams_import_preview_title') . ams_help_icon(_l('ams_import_preview_help')); ?>
                 </h4>
                 <div class="tw-flex tw-flex-wrap tw-gap-2 tw-mb-3">
                     <?php foreach ($counts as $k => $n) { ?>
                     <span class="label label-<?= $badge[$k]; ?> tw-text-sm"><?= _l('ams_import_status_' . $k); ?>: <?= (int) $n; ?></span>
                     <?php } ?>
                 </div>
-                <?php if ($action === 'preview') { ?>
-                <p class="text-muted tw-text-sm"><?= _l('ams_import_preview_help'); ?></p>
-                <?php } ?>
                 <table class="table dt-table table-condensed" data-order-col="0" data-order-type="asc">
                     <thead><tr><th><?= _l('ams_import_row'); ?></th><th><?= _l('ams_status'); ?></th><th><?= _l('ams_import_reference'); ?></th><th><?= _l('ams_import_message'); ?></th></tr></thead>
                     <tbody>
@@ -58,8 +55,7 @@ $ready  = $counts && $action === 'preview' && ($counts['create'] + $counts['upda
             <div class="col-md-7">
                 <div class="panel_s">
                     <div class="panel-body">
-                        <h4 class="tw-mt-0 tw-font-semibold tw-text-base"><?= _l('ams_import_mapping'); ?></h4>
-                        <p class="text-muted tw-text-sm"><?= _l('ams_import_mapping_help'); ?></p>
+                        <h4 class="tw-mt-0 tw-font-semibold tw-text-base"><?= _l('ams_import_mapping') . ams_help_icon(_l('ams_import_mapping_help')); ?></h4>
                         <table class="table table-condensed tw-mb-0">
                             <thead><tr><th><?= _l('ams_import_field'); ?></th><th><?= _l('ams_import_column'); ?></th></tr></thead>
                             <tbody>
@@ -92,13 +88,12 @@ $ready  = $counts && $action === 'preview' && ($counts['create'] + $counts['upda
                         </div>
                         <?php if ($type !== 'suppliers') { ?>
                         <div class="form-group">
-                            <label class="control-label" for="date_format"><?= _l('ams_import_date_format'); ?></label>
+                            <label class="control-label" for="date_format"><?= _l('ams_import_date_format') . ams_help_icon(_l('ams_import_date_help')); ?></label>
                             <select name="date_format" id="date_format" class="form-control">
                                 <?php foreach (['d/m/Y' => 'DD/MM/YYYY', 'm/d/Y' => 'MM/DD/YYYY', 'd-m-Y' => 'DD-MM-YYYY', 'd.m.Y' => 'DD.MM.YYYY', 'Y/m/d' => 'YYYY/MM/DD'] as $f => $l) { ?>
                                 <option value="<?= $f; ?>" <?= $options['date_format'] === $f ? 'selected' : ''; ?>><?= $l; ?></option>
                                 <?php } ?>
                             </select>
-                            <p class="text-muted tw-text-sm tw-mt-1"><?= _l('ams_import_date_help'); ?></p>
                         </div>
                         <?php if (staff_can('create', 'ams_setup')) { ?>
                         <div class="checkbox checkbox-primary">
@@ -110,20 +105,18 @@ $ready  = $counts && $action === 'preview' && ($counts['create'] + $counts['upda
                         <?php if ($type === 'items') { ?>
                         <?= render_select('default_kind', ams_item_kind_options(), ['id', 'name'], 'ams_import_default_kind', $options['default_kind'], [], [], '', '', false); ?>
                         <?php } ?>
-                        <?php if ($type === 'assets') { ?>
+                        <?php if (in_array($type, ['assets', 'items'], true)) { ?>
                         <div class="checkbox checkbox-primary">
                             <input type="checkbox" name="notify" id="ams_notify" value="1" <?= $options['notify'] ? 'checked' : ''; ?>>
-                            <label for="ams_notify"><?= _l('ams_import_notify'); ?></label>
+                            <label for="ams_notify"><?= _l($type === 'items' ? 'ams_import_notify_items' : 'ams_import_notify'); ?></label>
                         </div>
                         <?php } ?>
                         <hr />
-                        <button type="submit" name="action" value="preview" class="btn btn-default"><i class="fa-solid fa-magnifying-glass tw-mr-1"></i><?= _l('ams_import_preview'); ?></button>
+                        <button type="submit" name="action" value="preview" class="btn btn-default"><i class="fa-solid fa-magnifying-glass tw-mr-1"></i><?= _l('ams_import_preview'); ?></button><?= $ready ? '' : ams_help_icon(_l('ams_import_preview_first')); ?>
                         <?php if ($ready) { ?>
                         <button type="submit" name="action" value="import" class="btn btn-primary" onclick="return confirm('<?= e(_l('ams_import_confirm', (int) ($counts['create'] + $counts['update']))); ?>');">
                             <i class="fa-solid fa-file-import tw-mr-1"></i><?= _l('ams_import_run', (int) ($counts['create'] + $counts['update'])); ?>
                         </button>
-                        <?php } else { ?>
-                        <p class="text-muted tw-text-sm tw-mt-2 tw-mb-0"><?= _l('ams_import_preview_first'); ?></p>
                         <?php } ?>
                     </div>
                 </div>

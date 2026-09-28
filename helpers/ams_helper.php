@@ -33,7 +33,7 @@ function ams_setup_entities()
                 'salvage_percent'     => ['type' => 'number', 'label' => 'ams_dep_salvage_percent', 'step' => '0.01'],
                 'active'             => ['type' => 'checkbox', 'label' => 'ams_active', 'default' => 1],
             ],
-            'in_use' => [['ams_assets', 'category_id'], ['ams_categories', 'parent_id'], ['ams_models', 'category_id'], ['ams_items', 'category_id']],
+            'in_use' => [['ams_assets', 'category_id'], ['ams_categories', 'parent_id'], ['ams_models', 'category_id'], ['ams_items', 'category_id'], ['ams_licenses', 'category_id'], ['ams_po_lines', 'category_id'], ['ams_requests', 'category_id'], ['ams_audits', 'category_id']],
         ],
         'brands' => [
             'table'    => 'ams_brands',
@@ -45,7 +45,7 @@ function ams_setup_entities()
                 'notes'   => ['type' => 'textarea', 'label' => 'ams_notes'],
                 'active'  => ['type' => 'checkbox', 'label' => 'ams_active', 'default' => 1],
             ],
-            'in_use' => [['ams_assets', 'brand_id'], ['ams_models', 'brand_id'], ['ams_items', 'brand_id']],
+            'in_use' => [['ams_assets', 'brand_id'], ['ams_models', 'brand_id'], ['ams_items', 'brand_id'], ['ams_licenses', 'brand_id'], ['ams_po_lines', 'brand_id']],
         ],
         'models' => [
             'table'    => 'ams_models',
@@ -59,7 +59,7 @@ function ams_setup_entities()
                 'specs'       => ['type' => 'textarea', 'label' => 'ams_specs'],
                 'active'      => ['type' => 'checkbox', 'label' => 'ams_active', 'default' => 1],
             ],
-            'in_use' => [['ams_assets', 'model_id']],
+            'in_use' => [['ams_assets', 'model_id'], ['ams_po_lines', 'model_id']],
         ],
         'statuses' => [
             'table'    => 'ams_statuses',
@@ -74,7 +74,7 @@ function ams_setup_entities()
                 'sort_order'        => ['type' => 'number', 'label' => 'ams_sort_order'],
                 'active'            => ['type' => 'checkbox', 'label' => 'ams_active', 'default' => 1],
             ],
-            'in_use' => [['ams_assets', 'status_id']],
+            'in_use' => [['ams_assets', 'status_id'], ['ams_disposals', 'status_id'], ['ams_disposals', 'status_before'], ['ams_maintenance', 'status_before']],
         ],
         'locations' => [
             'table'    => 'ams_locations',
@@ -89,7 +89,7 @@ function ams_setup_entities()
                 'notes'            => ['type' => 'textarea', 'label' => 'ams_notes'],
                 'active'           => ['type' => 'checkbox', 'label' => 'ams_active', 'default' => 1],
             ],
-            'in_use' => [['ams_assets', 'location_id'], ['ams_locations', 'parent_id'], ['ams_stock_movements', 'location_id'], ['ams_items', 'default_location_id']],
+            'in_use' => [['ams_assets', 'location_id'], ['ams_locations', 'parent_id'], ['ams_stock_movements', 'location_id'], ['ams_stock_levels', 'location_id'], ['ams_items', 'default_location_id'], ['ams_item_checkouts', 'location_id'], ['ams_goods_receipts', 'location_id'], ['ams_purchase_orders', 'delivery_location_id'], ['ams_audits', 'location_id'], ['ams_audit_lines', 'expected_location_id'], ['ams_audit_lines', 'found_location_id']],
         ],
         'suppliers' => [
             'table'    => 'ams_suppliers',
@@ -105,7 +105,7 @@ function ams_setup_entities()
                 'notes'          => ['type' => 'textarea', 'label' => 'ams_notes'],
                 'active'         => ['type' => 'checkbox', 'label' => 'ams_active', 'default' => 1],
             ],
-            'in_use' => [['ams_assets', 'supplier_id'], ['ams_stock_movements', 'supplier_id']],
+            'in_use' => [['ams_assets', 'supplier_id'], ['ams_stock_movements', 'supplier_id'], ['ams_purchase_orders', 'supplier_id'], ['ams_maintenance', 'supplier_id'], ['ams_maintenance_schedules', 'supplier_id'], ['ams_licenses', 'supplier_id']],
         ],
     ];
 
@@ -528,7 +528,7 @@ function ams_qty($qty)
 
 function ams_movement_type_options()
 {
-    return array_map(fn ($t) => ['id' => $t, 'name' => _l('ams_mv_' . $t)], ['receive', 'issue', 'checkout', 'return', 'transfer_in', 'transfer_out', 'adjust', 'sale', 'sale_return', 'reserve', 'release']);
+    return array_map(fn ($t) => ['id' => $t, 'name' => _l('ams_mv_' . $t)], ['receive', 'issue', 'checkout', 'return', 'transfer_in', 'transfer_out', 'adjust']);
 }
 
 function ams_adjust_reason_options()
@@ -563,7 +563,8 @@ function ams_notify($staffIds, $langKey, $data, $link)
             'touserid'        => $id,
             'fromcompany'     => true,
             'link'            => $link,
-            'additional_data' => serialize(array_values((array) $data)),
+            // Perfex prints these values unescaped in the bell: escape names here.
+            'additional_data' => serialize(array_map(fn ($v) => e((string) $v), array_values((array) $data))),
         ])) {
             $sent[] = $id;
         }
@@ -650,11 +651,22 @@ function ams_staff_with_capability($feature, $capability, $fallbackToAdmins = tr
 }
 
 /** Staff chosen in settings for asset-manager notifications (overdue, declined acceptances). */
-function ams_manager_recipients()
+/**
+ * Asset managers who get reminders and alerts (Settings). When none are set, the
+ * active administrators get them, so reminders are never silently sent to nobody.
+ */
+function ams_manager_recipients($fallback = true)
 {
     $ids = json_decode((string) get_option('ams_manager_notify_staff'), true);
+    $ids = is_array($ids) ? array_values(array_filter(array_map('intval', $ids))) : [];
+    if ($ids || ! $fallback) {
+        return $ids;
+    }
 
-    return is_array($ids) ? array_values(array_filter(array_map('intval', $ids))) : [];
+    $CI = &get_instance();
+
+    return array_map('intval', array_column($CI->db->select('staffid')->where(['admin' => 1, 'active' => 1])
+        ->get(db_prefix() . 'staff')->result_array(), 'staffid'));
 }
 
 function ams_request_status_badge($status)
@@ -705,40 +717,30 @@ function ams_can_see_requests_page()
     return staff_can('view', 'ams_requests') || staff_can('approve', 'ams_requests') || (bool) ams_my_approver_departments();
 }
 
-// ─── HostBill ─────────────────────────────────────────────────────────────
+// ─── HostBill inventory (read-only) ───────────────────────────────────────
 
-/** HostBill order / invoice status as a Perfex label. */
-function ams_hb_status_badge($status)
+/** in_stock | low | out | not_tracked as a Perfex label. */
+function ams_hb_stock_badge($state)
 {
-    if ($status === null || $status === '') {
-        return '';
-    }
-    $map = ['active' => 'success', 'paid' => 'success', 'pending' => 'warning', 'unpaid' => 'warning', 'cancelled' => 'default', 'fraud' => 'danger', 'refunded' => 'info'];
+    $map = ['in_stock' => 'success', 'low' => 'warning', 'out' => 'danger', 'not_tracked' => 'default'];
 
-    return '<span class="label label-' . ($map[strtolower($status)] ?? 'default') . '">' . e($status) . '</span>';
+    return '<span class="label label-' . ($map[$state] ?? 'default') . '">' . _l('ams_hb_state_' . $state) . '</span>';
 }
 
-/** Stock state of a HostBill order line. */
-function ams_hb_line_state_badge($state)
+/** Low-stock level used per product in SQL: its own level (if overrides are allowed) or the default. */
+function ams_hb_level_sql($table)
 {
-    $map = [
-        'reserved' => 'info', 'deducted' => 'success', 'released' => 'default', 'returned' => 'default',
-        'short'    => 'danger', 'unmapped' => 'default', 'ignored' => 'default', 'none' => 'default',
-    ];
+    $default = (float) get_option('ams_hb_default_low_level');
 
-    return '<span class="label label-' . ($map[$state] ?? 'default') . '">' . _l('ams_hb_line_' . $state) . '</span>';
+    return get_option('ams_hb_allow_override') == '1' ? 'COALESCE(' . $table . '.low_level, ' . $default . ')' : (string) $default;
 }
 
-function ams_hb_fulfilment_badge($status)
+/** Stock state in SQL, same rules as Ams_hostbill_model::state_for(). */
+function ams_hb_state_sql($table)
 {
-    $map = ['pending' => 'warning', 'picked' => 'info', 'delivered' => 'success'];
-
-    return '<span class="label label-' . ($map[$status] ?? 'default') . '">' . _l('ams_hb_fulfilment_' . $status) . '</span>';
-}
-
-function ams_hb_webhook_url()
-{
-    return site_url('asset_management/hostbill_webhook') . '?token=' . urlencode((string) get_option('ams_hb_webhook_secret'));
+    return 'CASE WHEN ' . $table . '.stock_enabled = 0 OR ' . $table . '.qty IS NULL THEN "not_tracked"'
+        . ' WHEN ' . $table . '.qty <= 0 THEN "out"'
+        . ' WHEN ' . $table . '.qty <= ' . ams_hb_level_sql($table) . ' THEN "low" ELSE "in_stock" END';
 }
 
 // ─── Files ────────────────────────────────────────────────────────────────
@@ -907,6 +909,52 @@ function ams_sanitize_table_filters($params)
     }
 
     return $params;
+}
+
+// ─── Help tooltips ────────────────────────────────────────────────────────
+// All help text in the module is shown as an info icon (tooltip) right after the
+// label or heading it belongs to, never as text under the field.
+
+/** Info icon with the help text as tooltip. $text is already translated. */
+function ams_help_icon($text)
+{
+    $text = trim(preg_replace('/\s+/', ' ', strip_tags(str_ireplace(['<br>', '<br/>', '<br />'], ' ', (string) $text))));
+    if ($text === '') {
+        return '';
+    }
+
+    return ' <i class="fa-regular fa-circle-question tw-text-neutral-500" data-toggle="tooltip" data-placement="top" data-title="'
+        . e(html_entity_decode($text, ENT_QUOTES | ENT_HTML5, 'UTF-8')) . '"></i>';
+}
+
+/** Label (language key or ready text) followed by the help icon. */
+function ams_label_help($label, $helpText)
+{
+    return _l($label, '', false) . ams_help_icon($helpText);
+}
+
+/** Perfex render_yes_no_option() with the help icon after the label (core puts it before). */
+function ams_yes_no_option($option, $label, $helpKey = '')
+{
+    $value = (string) get_option($option); ?>
+<div class="form-group">
+    <label class="control-label clearfix"><?= _l($label) . ($helpKey ? ams_help_icon(_l($helpKey)) : ''); ?></label>
+    <div class="radio radio-primary radio-inline">
+        <input type="radio" id="y_opt_1_<?= e($option); ?>" name="settings[<?= e($option); ?>]" value="1" <?= $value === '1' ? 'checked' : ''; ?>>
+        <label for="y_opt_1_<?= e($option); ?>"><?= _l('settings_yes'); ?></label>
+    </div>
+    <div class="radio radio-primary radio-inline">
+        <input type="radio" id="y_opt_2_<?= e($option); ?>" name="settings[<?= e($option); ?>]" value="0" <?= $value === '0' ? 'checked' : ''; ?>>
+        <label for="y_opt_2_<?= e($option); ?>"><?= _l('settings_no'); ?></label>
+    </div>
+</div>
+<?php
+}
+
+/** Module settings (Assets → Setup → General / HostBill Settings): Perfex admin or "AMS - Settings". */
+function ams_can_view_settings()
+{
+    return is_admin() || staff_can('view', 'ams_settings') || staff_can('edit', 'ams_settings');
 }
 
 /** Staff who may use the import page for at least one type (assets, stock items, suppliers). */

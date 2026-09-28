@@ -11,8 +11,7 @@
                 <input type="hidden" name="id" value="">
                 <?= render_input('title', '<small class="req text-danger">* </small>' . _l('ams_audit_title'), '', 'text', ['placeholder' => _l('ams_audit_title_placeholder')]); ?>
                 <div class="ams-audit-scope">
-                    <p class="text-muted tw-text-sm"><?= _l('ams_audit_scope_help'); ?></p>
-                    <?= render_select('location_id', $locations, ['id', 'name'], 'ams_location'); ?>
+                    <?= render_select('location_id', $locations, ['id', 'name'], ams_label_help('ams_location', _l('ams_audit_scope_help'))); ?>
                     <div class="row">
                         <div class="col-md-6"><?= render_select('department_id', $departments, ['id', 'name'], 'ams_department'); ?></div>
                         <div class="col-md-6"><?= render_select('category_id', $categories, ['id', 'name'], 'ams_category'); ?></div>

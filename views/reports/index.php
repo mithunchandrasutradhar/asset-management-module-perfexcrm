@@ -20,7 +20,7 @@ $groups    = [
     'ams_reports_group_stock' => [
         [(bool) ams_item_viewable_kinds(), 'asset_management/inventory/levels', 'fa-solid fa-boxes-stacked', 'ams_stock_levels', 'ams_report_levels_desc'],
         [(bool) ams_item_viewable_kinds(), 'asset_management/inventory/movements', 'fa-solid fa-right-left', 'ams_stock_movements', 'ams_report_movements_desc'],
-        [staff_can('view', 'ams_hostbill'), 'asset_management/hostbill/orders', 'fa-solid fa-cart-shopping', 'ams_hb_menu_orders', 'ams_report_hb_desc'],
+        [staff_can('view', 'ams_hostbill'), 'asset_management/hostbill', 'fa-solid fa-cart-shopping', 'ams_hb_inventory', 'ams_report_hb_desc'],
     ],
     'ams_reports_group_operations' => [
         [staff_can('view', 'ams_audits'), 'asset_management/audits', 'fa-solid fa-clipboard-check', 'ams_audits', 'ams_report_audits_desc'],
@@ -32,8 +32,7 @@ $groups    = [
 ?>
 <div id="wrapper">
     <div class="content">
-        <h4 class="tw-mt-0 tw-font-bold tw-text-xl tw-mb-1"><?= _l('ams_reports'); ?></h4>
-        <p class="text-muted tw-mb-4"><?= _l('ams_reports_intro'); ?></p>
+        <h4 class="tw-mt-0 tw-font-bold tw-text-xl tw-mb-4"><?= _l('ams_reports') . ams_help_icon(_l('ams_reports_intro')); ?></h4>
         <?php foreach ($groups as $title => $items) {
             $items = array_filter($items, fn ($i) => $i[0]);
             if (! $items) {
