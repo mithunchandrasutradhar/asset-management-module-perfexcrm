@@ -30,6 +30,9 @@ function ams_build_setup_table($entity, $columns, $join, $countSql, $rules)
                 $extra[] = $t . '.system_key as system_key';
                 $extra[] = $t . '.color as color';
             }
+            if ($entity === 'categories') {
+                $extra[] = $t . '.icon as icon';
+            }
 
             $result = data_tables_init($aColumns, 'id', $t, $join, $where, $extra);
             $output = $result['output'];

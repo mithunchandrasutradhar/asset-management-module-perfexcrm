@@ -8,7 +8,8 @@ $p = db_prefix();
 $t = $p . 'ams_categories';
 
 return ams_build_setup_table('categories', [
-    [$t . '.name as name', null],
+    // Name with the category icon in front (only real Font Awesome classes are shown).
+    [$t . '.name as name', fn ($r) => (ams_valid_icon($r['icon'] ?? '') ? '<i class="' . e($r['icon']) . ' tw-w-5 tw-mr-1 text-center tw-text-neutral-500"></i>' : '') . e($r['name'])],
     ['pc.name as parent_name', null],
     [$t . '.code as code', null],
     [$t . '.description as description', null],

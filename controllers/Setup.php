@@ -60,6 +60,29 @@ class Setup extends AdminController
         App_table::find('ams_' . $entity)->output(['entity' => $entity]);
     }
 
+    /**
+     * Current options of the form's select fields (JSON). The form asks for them each
+     * time it opens, so records added since the page loaded (e.g. a new parent
+     * category) are offered straight away.
+     */
+    public function options($entity)
+    {
+        if (staff_cant('view', 'ams_setup')) {
+            ajax_access_denied();
+        }
+
+        $cfg     = $this->entity_or_404($entity);
+        $options = [];
+        foreach ($cfg['fields'] as $field => $def) {
+            if ($def['type'] === 'select' && ! empty($def['options']) && is_callable($def['options'])) {
+                $options[$field] = array_map(fn ($o) => ['id' => (string) $o['id'], 'name' => (string) $o['name']], call_user_func($def['options']));
+            }
+        }
+
+        header('Content-Type: application/json');
+        echo json_encode($options);
+    }
+
     public function get($entity, $id)
     {
         if (staff_cant('view', 'ams_setup')) {

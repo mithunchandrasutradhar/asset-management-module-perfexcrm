@@ -199,6 +199,9 @@ class Ams_setup_model extends App_Model
             if ($def['type'] === 'number' && ! is_numeric($value)) {
                 return _l('ams_invalid_value', _l($def['label']));
             }
+            if ($def['type'] === 'icon' && ! ams_valid_icon($value)) {
+                return _l('ams_invalid_value', _l($def['label']));
+            }
             if ($def['type'] === 'color' && ! preg_match('/^#[0-9a-f]{3}([0-9a-f]{3})?$/i', (string) $value)) {
                 return _l('ams_invalid_value', _l($def['label']));
             }

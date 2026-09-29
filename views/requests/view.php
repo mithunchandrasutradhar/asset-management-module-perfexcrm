@@ -98,10 +98,23 @@ $canFulfil = $r->status === 'approved' && (
                             <div class="panel-body">
                                 <h4 class="tw-mt-0 tw-font-semibold tw-text-lg"><?= _l($r->type === 'issue' ? 'ams_req_resolve' : 'ams_req_fulfil'); ?></h4>
                                 <?= form_open(admin_url('asset_management/requests/fulfil/' . $r->id), ['class' => 'ams-req-form']); ?>
-                                <?php if ($r->type === 'asset') { ?>
+                                <?php
+                                // Nothing to hand out: say why and where to go next instead of an empty list.
+                                $nothing = ($r->type === 'asset' && ! $assets) || (in_array($r->type, ['accessory', 'consumable'], true) && ! $items);
+                                if ($nothing) { ?>
+                                <div class="alert alert-warning">
+                                    <p class="tw-mb-2"><?= _l($r->type === 'asset' ? 'ams_req_no_available_assets_long' : 'ams_req_no_available_items_long'); ?></p>
+                                    <?php if ($r->type === 'asset' && staff_can('create', 'ams_assets')) { ?>
+                                    <a href="<?= admin_url('asset_management/assets/asset'); ?>" class="btn btn-default btn-sm"><i class="fa-regular fa-plus tw-mr-1"></i><?= _l('ams_new_asset'); ?></a>
+                                    <?php } ?>
+                                    <?php if (staff_can('create', 'ams_procurement')) { ?>
+                                    <a href="<?= admin_url('asset_management/procurement/po?request_id=' . $r->id); ?>" class="btn btn-default btn-sm"><i class="fa-solid fa-cart-shopping tw-mr-1"></i><?= _l('ams_po_create_from_request'); ?></a>
+                                    <?php } ?>
+                                </div>
+                                <?php } ?>
+                                <?php if ($r->type === 'asset' && $assets) { ?>
                                 <?= render_select('asset_id', $assets, ['id', 'name'], 'ams_req_pick_asset'); ?>
-                                <?php if (! $assets) { ?><p class="text-warning tw-text-sm"><?= _l('ams_req_no_available_assets'); ?></p><?php } ?>
-                                <?php } elseif (in_array($r->type, ['accessory', 'consumable'])) { ?>
+                                <?php } elseif (in_array($r->type, ['accessory', 'consumable'], true) && $items) { ?>
                                 <?= render_select('item_id', $items, ['id', 'name'], 'ams_item', $r->item_id); ?>
                                 <div class="row">
                                     <div class="col-md-5"><?= render_input('qty', 'ams_quantity', ams_qty($r->qty), 'number', ['step' => '0.01', 'min' => '0.01']); ?></div>
@@ -109,7 +122,7 @@ $canFulfil = $r->status === 'approved' && (
                                 </div>
                                 <?php } ?>
                                 <?= render_textarea('fulfilment_note', 'ams_note'); ?>
-                                <button type="submit" class="btn btn-primary"><?= _l($r->type === 'issue' ? 'ams_req_mark_resolved' : 'ams_req_give_to_requester'); ?></button>
+                                <button type="submit" class="btn btn-primary" <?= ! empty($nothing) ? 'disabled' : ''; ?>><?= _l($r->type === 'issue' ? 'ams_req_mark_resolved' : 'ams_req_give_to_requester'); ?></button>
                                 <?= form_close(); ?>
                             </div>
                         </div>

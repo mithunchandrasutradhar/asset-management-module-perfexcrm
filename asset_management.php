@@ -636,6 +636,16 @@ function ams_post_links_script()
         }
         form.appendTo('body').trigger('submit');
     });
+
+    // Tables on tabs that were hidden at page load were measured at zero width:
+    // re-measure them when their tab is shown (My Assets, asset page, item page, staff page).
+    $(document).on('shown.bs.tab', 'a[data-toggle="tab"]', function(e) {
+        $($(e.target).attr('href')).find('table.dataTable').each(function() {
+            if ($.fn.DataTable.isDataTable(this)) {
+                $(this).DataTable().columns.adjust();
+            }
+        });
+    });
 </script>
 <?php
 }

@@ -327,7 +327,7 @@ class Ams_people_model extends App_Model
         if ($categoryId && total_rows($this->t('ams_categories'), ['id' => $categoryId]) === 0) {
             return ['success' => false, 'message' => _l('ams_invalid_value', _l('ams_category'))];
         }
-        if ($itemId && total_rows($this->t('ams_items'), ['id' => $itemId, 'kind' => $type]) === 0) {
+        if ($itemId && ! in_array((string) $this->db->select('kind')->where('id', $itemId)->get($this->t('ams_items'))->row('kind'), $this->request_item_kinds($type), true)) {
             return ['success' => false, 'message' => _l('ams_invalid_value', _l('ams_item'))];
         }
 
@@ -366,6 +366,12 @@ class Ams_people_model extends App_Model
         log_activity('AMS request created [' . $num . ']');
 
         return ['success' => true, 'id' => $id, 'message' => _l('ams_req_submitted', $num)];
+    }
+
+    /** Item kinds a request type may be fulfilled with ("Consumable / stock item" covers both). */
+    private function request_item_kinds($type)
+    {
+        return ['accessory' => ['accessory'], 'consumable' => ['consumable', 'stock']][$type] ?? [];
     }
 
     /**
@@ -540,7 +546,7 @@ class Ams_people_model extends App_Model
                 return ['success' => false, 'message' => _l('ams_field_required', _l('ams_item'))];
             }
             // The item must be of the kind requested, and no more than was asked for.
-            if ($item->kind !== $req->type) {
+            if (! in_array($item->kind, $this->request_item_kinds($req->type), true)) {
                 return ['success' => false, 'message' => _l('ams_invalid_value', _l('ams_item'))];
             }
             if ((float) ($input['qty'] ?? $req->qty) > (float) $req->qty + 0.0001) {

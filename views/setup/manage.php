@@ -66,6 +66,15 @@
                         case 'staff':
                             echo render_select($field, $staffOptions, ['id', 'name'], $label);
                             break;
+                        case 'icon': // searchable list that shows each icon (Font Awesome bundled with Perfex)
+                            echo '<div class="form-group" app-field-wrapper="' . $field . '"><label for="' . $field . '" class="control-label">' . $label . '</label>'
+                                . '<select name="' . $field . '" id="' . $field . '" class="selectpicker ams-icon-select" data-width="100%" data-live-search="true" data-size="10" data-none-selected-text="' . e(_l('ams_icon_none')) . '">'
+                                . '<option value=""></option>';
+                            foreach (call_user_func($def['options']) as $o) {
+                                echo '<option value="' . e($o['id']) . '" data-content="<i class=&quot;' . e($o['id']) . ' tw-w-5 tw-mr-2 text-center&quot;></i> ' . e($o['name']) . '">' . e($o['name']) . '</option>';
+                            }
+                            echo '</select></div>';
+                            break;
                         case 'color':
                             echo render_color_picker($field, $label);
                             break;
@@ -118,7 +127,7 @@
 
             if (type === 'checkbox') {
                 el.prop('checked', data.id ? value == 1 : el.data('default') == 1);
-            } else if (type === 'select' || type === 'staff') {
+            } else if (type === 'select' || type === 'staff' || type === 'icon') {
                 el.selectpicker('val', value == 0 && field === 'parent_id' ? '' : value);
             } else if (type === 'color') {
                 el.val(value).trigger('change');
@@ -135,20 +144,52 @@
         $('.ams-system-note').toggleClass('hide', !isSystem);
     }
 
+    // Rebuild the select lists from the server (records added since the page loaded,
+    // e.g. a new parent category, appear at once). A record is never its own parent.
+    function ams_setup_load_options(recordId, done) {
+        $.get(admin_url + 'asset_management/setup/options/' + AMS_SETUP_ENTITY, function(options) {
+            options = typeof options === 'string' ? JSON.parse(options) : options;
+            var form = $('#ams-setup-form');
+            $.each(options, function(field, list) {
+                var el = form.find('select[name="' + field + '"]');
+                if (!el.length) {
+                    return;
+                }
+                var hasBlank = el.find('option[value=""]').length > 0;
+                el.empty();
+                if (hasBlank) {
+                    el.append($('<option>').val(''));
+                }
+                $.each(list, function(i, o) {
+                    if (field === 'parent_id' && recordId && String(o.id) === String(recordId)) {
+                        return;
+                    }
+                    el.append($('<option>').val(o.id).text(o.name));
+                });
+                el.selectpicker('refresh');
+            });
+            done();
+        }).fail(done);
+    }
+
     function ams_setup_new() {
-        ams_setup_fill({});
-        $('#ams_setup_modal .edit-title').addClass('hide');
-        $('#ams_setup_modal .add-title').removeClass('hide');
-        $('#ams_setup_modal').modal('show');
+        ams_setup_load_options(null, function() {
+            ams_setup_fill({});
+            $('#ams_setup_modal .edit-title').addClass('hide');
+            $('#ams_setup_modal .add-title').removeClass('hide');
+            $('#ams_setup_modal').modal('show');
+        });
     }
 
     function ams_setup_edit(id) {
         $.get(admin_url + 'asset_management/setup/get/' + AMS_SETUP_ENTITY + '/' + id, function(data) {
             data = typeof data === 'string' ? JSON.parse(data) : data;
-            ams_setup_fill(data);
-            $('#ams_setup_modal .add-title').addClass('hide');
-            $('#ams_setup_modal .edit-title').removeClass('hide');
-            $('#ams_setup_modal').modal('show');
+            ams_setup_load_options(id, function() {
+                ams_setup_fill(data);
+                $('#ams_setup_modal .add-title').addClass('hide');
+                $('#ams_setup_modal .edit-title').removeClass('hide');
+                $('#ams_setup_modal').modal('show');
+            });
         });
     }
 

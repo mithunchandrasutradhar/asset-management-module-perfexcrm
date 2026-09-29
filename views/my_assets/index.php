@@ -149,7 +149,16 @@ $firstTab    = $holdings['acceptances'] ? 'acceptances' : ($canAssets ? 'assets'
                     <?= render_select('category_id', $categories, ['id', 'name'], 'ams_category'); ?>
                 </div>
                 <div class="ams-req-f ams-req-f-accessory ams-req-f-consumable hide">
-                    <?= render_select('item_id', $items, ['id', 'name'], 'ams_item'); ?>
+                    <?php // Each option carries its kind, so the list only offers items of the chosen type. ?>
+                    <div class="form-group" app-field-wrapper="item_id">
+                        <label for="item_id" class="control-label"><?= _l('ams_item'); ?></label>
+                        <select name="item_id" id="item_id" class="selectpicker" data-width="100%" data-live-search="true" data-none-selected-text="<?= e(_l('dropdown_non_selected_tex')); ?>">
+                            <option value=""></option>
+                            <?php foreach ($items as $it) { ?>
+                            <option value="<?= (int) $it['id']; ?>" data-kind="<?= e($it['kind']); ?>"><?= e($it['name']); ?></option>
+                            <?php } ?>
+                        </select>
+                    </div>
                 </div>
                 <div class="ams-req-f ams-req-f-issue hide">
                     <?= render_select('asset_id', array_map(fn ($a) => ['id' => $a['id'], 'name' => $a['asset_tag'] . ' - ' . $a['name']], $my_assets), ['id', 'name'], 'ams_asset'); ?>
@@ -215,6 +224,17 @@ $firstTab    = $holdings['acceptances'] ? 'acceptances' : ($canAssets ? 'assets'
         $('#ams-request-form select[name="type"]').on('change', function() {
             $('.ams-req-f').addClass('hide');
             $('.ams-req-f-' + $(this).val()).removeClass('hide');
+            // Accessory requests list accessories; consumable requests list consumables and stock items.
+            var kinds = { accessory: ['accessory'], consumable: ['consumable', 'stock'] }[$(this).val()] || [];
+            var itemSelect = $('#ams-request-form select[name="item_id"]');
+            itemSelect.find('option[data-kind]').each(function() {
+                var show = kinds.indexOf($(this).data('kind')) !== -1;
+                $(this).prop('disabled', !show).toggle(show);
+                if (!show && $(this).is(':selected')) {
+                    itemSelect.val('');
+                }
+            });
+            itemSelect.selectpicker('refresh');
         });
         appValidateForm($('#ams-request-form'), { subject: 'required' }, function(form) {
             $.post(form.action, $(form).serialize()).done(function(r) {

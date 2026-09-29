@@ -24,7 +24,7 @@ function ams_setup_entities()
                 'name'        => ['type' => 'text', 'label' => 'ams_name', 'required' => true],
                 'parent_id'   => ['type' => 'select', 'label' => 'ams_parent_category', 'options' => 'ams_parent_category_options', 'help' => 'ams_parent_category_help'],
                 'code'        => ['type' => 'text', 'label' => 'ams_category_code', 'help' => 'ams_category_code_help'],
-                'icon'        => ['type' => 'text', 'label' => 'ams_icon', 'help' => 'ams_icon_help'],
+                'icon'        => ['type' => 'icon', 'label' => 'ams_icon', 'help' => 'ams_icon_help', 'options' => 'ams_icon_options'],
                 'description'        => ['type' => 'textarea', 'label' => 'ams_description'],
                 'require_acceptance' => ['type' => 'checkbox', 'label' => 'ams_require_acceptance', 'help' => 'ams_require_acceptance_help'],
                 'eula_text'          => ['type' => 'textarea', 'label' => 'ams_category_terms', 'help' => 'ams_category_terms_help'],
@@ -774,6 +774,73 @@ function ams_depreciation_method_options($withInherit = false)
     }
 
     return $options;
+}
+
+/**
+ * Icons offered for categories (Font Awesome 6.2 Free, bundled with Perfex - every
+ * name checked against assets/plugins/font-awesome). Icons already saved on a
+ * category are added, so older values stay selectable. [['id' => class, 'name' => label]]
+ */
+function ams_icon_options()
+{
+    $icons = [
+        // IT and computers
+        'fa-solid fa-laptop', 'fa-solid fa-desktop', 'fa-solid fa-computer', 'fa-solid fa-display', 'fa-solid fa-tv',
+        'fa-solid fa-tablet-screen-button', 'fa-solid fa-tablet', 'fa-solid fa-mobile-screen-button', 'fa-solid fa-mobile',
+        'fa-solid fa-keyboard', 'fa-solid fa-computer-mouse', 'fa-solid fa-headphones', 'fa-solid fa-headset', 'fa-solid fa-microphone',
+        'fa-solid fa-camera', 'fa-solid fa-camera-retro', 'fa-solid fa-video', 'fa-solid fa-print', 'fa-solid fa-fax', 'fa-solid fa-server',
+        'fa-solid fa-hard-drive', 'fa-solid fa-hdd', 'fa-regular fa-hdd', 'fa-solid fa-memory', 'fa-solid fa-microchip', 'fa-solid fa-sd-card',
+        'fa-solid fa-floppy-disk', 'fa-solid fa-compact-disc', 'fa-solid fa-database', 'fa-brands fa-usb', 'fa-solid fa-plug',
+        'fa-solid fa-battery-full', 'fa-solid fa-car-battery', 'fa-solid fa-charging-station', 'fa-solid fa-power-off', 'fa-solid fa-sim-card',
+        'fa-solid fa-gamepad', 'fa-solid fa-satellite-dish',
+        // network
+        'fa-solid fa-wifi', 'fa-solid fa-network-wired', 'fa-solid fa-ethernet', 'fa-solid fa-tower-broadcast', 'fa-solid fa-broadcast-tower',
+        'fa-solid fa-tower-cell', 'fa-solid fa-signal', 'fa-solid fa-globe', 'fa-solid fa-cloud', 'fa-solid fa-shield-halved', 'fa-solid fa-lock',
+        'fa-solid fa-key', 'fa-solid fa-satellite',
+        // phones
+        'fa-solid fa-phone', 'fa-solid fa-phone-flip', 'fa-solid fa-blender-phone', 'fa-solid fa-voicemail',
+        // office and furniture
+        'fa-solid fa-chair', 'fa-solid fa-couch', 'fa-solid fa-table', 'fa-solid fa-bed', 'fa-solid fa-box-archive', 'fa-solid fa-box',
+        'fa-solid fa-boxes-stacked', 'fa-solid fa-briefcase', 'fa-solid fa-folder', 'fa-solid fa-file', 'fa-solid fa-book', 'fa-solid fa-clipboard',
+        'fa-solid fa-pen', 'fa-solid fa-paperclip', 'fa-solid fa-calculator', 'fa-solid fa-scissors', 'fa-solid fa-stapler', 'fa-solid fa-door-open',
+        'fa-solid fa-door-closed', 'fa-solid fa-building', 'fa-solid fa-warehouse', 'fa-solid fa-store', 'fa-solid fa-house',
+        // appliances and facilities
+        'fa-solid fa-fan', 'fa-solid fa-snowflake', 'fa-solid fa-temperature-half', 'fa-solid fa-fire-extinguisher', 'fa-solid fa-fire',
+        'fa-solid fa-faucet', 'fa-solid fa-sink', 'fa-solid fa-toilet', 'fa-solid fa-shower', 'fa-solid fa-glass-water', 'fa-solid fa-mug-hot',
+        'fa-solid fa-utensils', 'fa-solid fa-kitchen-set', 'fa-solid fa-blender', 'fa-solid fa-broom', 'fa-solid fa-soap', 'fa-solid fa-bolt',
+        'fa-solid fa-lightbulb', 'fa-regular fa-lightbulb', 'fa-solid fa-solar-panel', 'fa-solid fa-gas-pump', 'fa-solid fa-oil-can', 'fa-solid fa-elevator',
+        // tools and maintenance
+        'fa-solid fa-screwdriver-wrench', 'fa-solid fa-tools', 'fa-solid fa-wrench', 'fa-solid fa-hammer', 'fa-solid fa-screwdriver',
+        'fa-solid fa-toolbox', 'fa-solid fa-gears', 'fa-solid fa-gear', 'fa-solid fa-ruler', 'fa-solid fa-helmet-safety', 'fa-solid fa-trowel',
+        // vehicles
+        'fa-solid fa-car', 'fa-solid fa-truck', 'fa-solid fa-truck-pickup', 'fa-solid fa-van-shuttle', 'fa-solid fa-motorcycle', 'fa-solid fa-bicycle',
+        'fa-solid fa-bus',
+        // other
+        'fa-solid fa-shirt', 'fa-solid fa-clock', 'fa-solid fa-bell', 'fa-solid fa-kit-medical', 'fa-solid fa-money-bill', 'fa-solid fa-credit-card',
+        'fa-solid fa-tag', 'fa-solid fa-tags', 'fa-solid fa-cube', 'fa-solid fa-cubes', 'fa-solid fa-puzzle-piece', 'fa-solid fa-star',
+        'fa-solid fa-expand-arrows-alt', 'fa-brands fa-stripe-s', 'fa-solid fa-circle-question',
+    ];
+
+    $CI = &get_instance();
+    foreach ($CI->db->distinct()->select('icon')->where('icon IS NOT NULL', null, false)->where('icon !=', '')
+        ->get(db_prefix() . 'ams_categories')->result_array() as $row) {
+        if (! in_array($row['icon'], $icons, true) && ams_valid_icon($row['icon'])) {
+            $icons[] = $row['icon'];
+        }
+    }
+
+    return array_map(function ($class) {
+        $name = preg_replace('/^fa-(solid|regular|brands) fa-/', '', $class);
+        $style = preg_match('/^fa-(regular|brands) /', $class, $m) ? ' (' . $m[1] . ')' : '';
+
+        return ['id' => $class, 'name' => ucfirst(str_replace('-', ' ', $name)) . $style];
+    }, $icons);
+}
+
+/** A Font Awesome class as stored on a category ("fa-solid fa-laptop"). */
+function ams_valid_icon($class)
+{
+    return (bool) preg_match('/^fa-(solid|regular|brands) fa-[a-z0-9-]{1,50}$/', (string) $class);
 }
 
 function ams_category_depreciation_method_options()
