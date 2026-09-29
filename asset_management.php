@@ -4,7 +4,7 @@ defined('BASEPATH') or exit('No direct script access allowed');
 
 /*
 Module Name: Asset Management
-Description: IT asset & inventory management - asset register, check-out/check-in, lifecycle, history, purchases (HostBill stock sync in a later phase)
+Description: IT asset & inventory management - asset register, check-out/check-in, requests, accessories/consumables/stock, maintenance, licences, purchase orders, depreciation, labels, audits, reports and a read-only HostBill inventory with low-stock alerts
 Version: 1.0.0
 Requires at least: 3.3.*
 Author: Alpha Net BD
