@@ -477,6 +477,10 @@ if (! $CI->db->table_exists($p . 'ams_requests')) {
         KEY `type` (`type`)
     ) " . $engine);
 }
+// Issue reports can also be about accessories a staff member holds (the check-out they report on).
+if ($CI->db->table_exists($p . 'ams_requests') && ! $CI->db->field_exists('checkout_id', $p . 'ams_requests')) {
+    $CI->db->query('ALTER TABLE `' . $p . 'ams_requests` ADD `checkout_id` INT NULL AFTER `item_id`, ADD KEY `checkout_id` (`checkout_id`)');
+}
 
 // Perfex department -> staff who approve requests from that department.
 if (! $CI->db->table_exists($p . 'ams_department_approvers')) {

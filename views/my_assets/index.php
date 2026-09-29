@@ -17,7 +17,7 @@ $firstTab    = $holdings['acceptances'] ? 'acceptances' : ($canAssets ? 'assets'
                     <?php if ($canCreate) { ?>
                     <div class="tw-flex tw-gap-1">
                         <a href="#" class="btn btn-primary" onclick="ams_new_request('asset'); return false;"><i class="fa-regular fa-plus tw-mr-1"></i><?= _l('ams_req_new'); ?></a>
-                        <?php if ($my_assets) { ?>
+                        <?php if ($my_assets || $my_checkouts) { ?>
                         <a href="#" class="btn btn-default" onclick="ams_new_request('issue'); return false;"><i class="fa-solid fa-screwdriver-wrench tw-mr-1"></i><?= _l('ams_req_report_issue'); ?></a>
                         <?php } ?>
                     </div>
@@ -161,12 +161,32 @@ $firstTab    = $holdings['acceptances'] ? 'acceptances' : ($canAssets ? 'assets'
                     </div>
                 </div>
                 <div class="ams-req-f ams-req-f-issue hide">
-                    <?= render_select('asset_id', array_map(fn ($a) => ['id' => $a['id'], 'name' => $a['asset_tag'] . ' - ' . $a['name']], $my_assets), ['id', 'name'], 'ams_asset'); ?>
+                    <?php // Anything I hold: assets, and accessories (with how many I hold). ?>
+                    <div class="form-group" app-field-wrapper="issue_ref">
+                        <label for="issue_ref" class="control-label"><?= _l('ams_req_issue_item'); ?></label>
+                        <select name="issue_ref" id="issue_ref" class="selectpicker" data-width="100%" data-live-search="true" data-none-selected-text="<?= e(_l('dropdown_non_selected_tex')); ?>">
+                            <option value=""></option>
+                            <?php if ($my_assets) { ?>
+                            <optgroup label="<?= e(_l('ams_assets')); ?>">
+                                <?php foreach ($my_assets as $ma) { ?>
+                                <option value="asset:<?= (int) $ma['id']; ?>"><?= e($ma['asset_tag'] . ' - ' . $ma['name']); ?></option>
+                                <?php } ?>
+                            </optgroup>
+                            <?php } ?>
+                            <?php if ($my_checkouts) { ?>
+                            <optgroup label="<?= e(_l('ams_accessories')); ?>">
+                                <?php foreach ($my_checkouts as $mc) { ?>
+                                <option value="checkout:<?= (int) $mc['id']; ?>" data-held="<?= e(ams_qty($mc['outstanding'])); ?>"><?= e($mc['sku'] . ' - ' . $mc['name'] . ' (' . _l('ams_req_issue_held', ams_qty($mc['outstanding']) . ' ' . $mc['unit']) . ')'); ?></option>
+                                <?php } ?>
+                            </optgroup>
+                            <?php } ?>
+                        </select>
+                    </div>
                 </div>
                 <?= render_input('subject', '<small class="req text-danger">* </small>' . _l('ams_req_subject')); ?>
                 <?= render_textarea('description', 'ams_req_description'); ?>
                 <div class="row">
-                    <div class="col-md-4 ams-req-f ams-req-f-asset ams-req-f-accessory ams-req-f-consumable">
+                    <div class="col-md-4 ams-req-f ams-req-f-asset ams-req-f-accessory ams-req-f-consumable ams-req-qty">
                         <?= render_input('qty', 'ams_quantity', '1', 'number', ['min' => '1', 'step' => '1']); ?>
                     </div>
                     <div class="col-md-4">
@@ -235,7 +255,20 @@ $firstTab    = $holdings['acceptances'] ? 'acceptances' : ($canAssets ? 'assets'
                 }
             });
             itemSelect.selectpicker('refresh');
+            ams_issue_qty();
         });
+        // Issue on an accessory: ask how many units are faulty (up to what is held).
+        function ams_issue_qty() {
+            var form = $('#ams-request-form');
+            if (form.find('select[name="type"]').val() !== 'issue') {
+                return;
+            }
+            var opt = form.find('select[name="issue_ref"] option:selected');
+            var isAccessory = String(opt.val() || '').indexOf('checkout:') === 0;
+            form.find('.ams-req-qty').toggleClass('hide', !isAccessory);
+            form.find('input[name="qty"]').attr('max', isAccessory ? opt.data('held') : null).val(1);
+        }
+        $('#ams-request-form select[name="issue_ref"]').on('change', ams_issue_qty);
         appValidateForm($('#ams-request-form'), { subject: 'required' }, function(form) {
             $.post(form.action, $(form).serialize()).done(function(r) {
                 r = typeof r === 'string' ? JSON.parse(r) : r;

@@ -27,6 +27,10 @@ class My_assets extends AdminController
         $data['holdings']   = $this->ams_people_model->holdings($me);
         $data['my_assets']  = $this->db->select('id, asset_tag, name')->where('assigned_type', 'staff')->where('assigned_id', $me)
             ->where('is_deleted', 0)->order_by('asset_tag')->get(db_prefix() . 'ams_assets')->result_array();
+        // Accessories I hold (open check-outs), for "report an issue".
+        $data['my_checkouts'] = $this->db->query('SELECT co.id, i.sku, i.name, i.unit, co.qty - co.returned_qty outstanding
+            FROM ' . db_prefix() . 'ams_item_checkouts co JOIN ' . db_prefix() . 'ams_items i ON i.id = co.item_id
+            WHERE co.status = "open" AND co.assigned_type = "staff" AND co.assigned_id = ? ORDER BY i.name', [$me])->result_array();
         $data['categories'] = ams_category_options(true);
         $data['items']      = $this->db->select('id, kind, CONCAT(sku, " - ", name) name', false)->where('active', 1)
             ->where_in('kind', ['accessory', 'consumable', 'stock'])->order_by('name')->get(db_prefix() . 'ams_items')->result_array();

@@ -386,7 +386,7 @@ class Ams_inventory_model extends App_Model
                 'department_id' => $dept,
                 'note'          => $note,
             ]);
-        }, _l('ams_checked_out_success', e(ams_assignee_text($type, $to))));
+        }, _l('ams_item_checked_out_success', e(ams_assignee_text($type, $to))));
 
         if ($result['success']) {
             $result['checkout_id'] = $checkoutId;

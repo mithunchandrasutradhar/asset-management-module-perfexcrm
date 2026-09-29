@@ -52,6 +52,7 @@ $canFulfil = $r->status === 'approved' && (
                                         <tr><td class="tw-font-medium tw-text-neutral-500"><?= _l('ams_req_type'); ?></td><td><?= _l('ams_req_type_' . $r->type); ?></td></tr>
                                         <?php if ($r->category_id) { ?><tr><td class="tw-font-medium tw-text-neutral-500"><?= _l('ams_category'); ?></td><td><?= e(ams_option_label(ams_category_options(), $r->category_id)); ?></td></tr><?php } ?>
                                         <?php if ($r->item_id) { ?><tr><td class="tw-font-medium tw-text-neutral-500"><?= _l('ams_item'); ?></td><td><a href="<?= admin_url('asset_management/inventory/view/' . $r->item_id); ?>"><?= e($this->db->select('CONCAT(sku, " - ", name) n', false)->where('id', $r->item_id)->get(db_prefix() . 'ams_items')->row()->n ?? ''); ?></a></td></tr><?php } ?>
+                                        <?php if (! empty($issue_checkout)) { ?><tr><td class="tw-font-medium tw-text-neutral-500"><?= _l('ams_req_issue_held_since'); ?></td><td><?= e(_dt($issue_checkout->date_created ?? '')) ?: '-'; ?> <span class="text-muted">(<?= _l('ams_req_issue_held', ams_qty((float) $issue_checkout->qty - (float) $issue_checkout->returned_qty) . ' ' . e($issue_checkout->unit)); ?>)</span></td></tr><?php } ?>
                                         <?php if ($r->asset_id) { ?><tr><td class="tw-font-medium tw-text-neutral-500"><?= _l('ams_asset'); ?></td><td><a href="<?= admin_url('asset_management/assets/view/' . $r->asset_id); ?>"><?= e($this->db->select('CONCAT(asset_tag, " - ", name) n', false)->where('id', $r->asset_id)->get(db_prefix() . 'ams_assets')->row()->n ?? ''); ?></a></td></tr><?php } ?>
                                         <tr><td class="tw-font-medium tw-text-neutral-500"><?= _l('ams_quantity'); ?></td><td><?= ams_qty($r->qty); ?></td></tr>
                                         <tr><td class="tw-font-medium tw-text-neutral-500"><?= _l('ams_priority'); ?></td><td><?= _l('ams_priority_' . $r->priority); ?></td></tr>
@@ -119,6 +120,21 @@ $canFulfil = $r->status === 'approved' && (
                                 <div class="row">
                                     <div class="col-md-5"><?= render_input('qty', 'ams_quantity', ams_qty($r->qty), 'number', ['step' => '0.01', 'min' => '0.01']); ?></div>
                                     <div class="col-md-7"><?= render_select('location_id', $locations, ['id', 'name'], 'ams_from_location'); ?></div>
+                                </div>
+                                <?php } ?>
+                                <?php if ($r->type === 'issue' && ! empty($r->checkout_id)) { ?>
+                                <?php // Accessory issue: write the faulty units off and / or give working ones (both default on). ?>
+                                <p class="text-muted tw-text-sm"><?= _l('ams_req_issue_resolve_help', ams_qty($r->qty)); ?></p>
+                                <div class="checkbox checkbox-primary">
+                                    <input type="checkbox" name="write_off" id="ams_write_off" value="1" checked>
+                                    <label for="ams_write_off"><?= _l('ams_req_issue_write_off', ams_qty($r->qty)); ?></label>
+                                </div>
+                                <div class="checkbox checkbox-primary">
+                                    <input type="checkbox" name="replace" id="ams_replace" value="1" checked>
+                                    <label for="ams_replace"><?= _l('ams_req_issue_replace', ams_qty($r->qty)); ?></label>
+                                </div>
+                                <div class="ams-replace-location">
+                                    <?= render_select('location_id', $locations, ['id', 'name'], 'ams_req_issue_replace_from', $issue_checkout->location_id ?? ''); ?>
                                 </div>
                                 <?php } ?>
                                 <?= render_textarea('fulfilment_note', 'ams_note'); ?>

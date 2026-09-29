@@ -312,22 +312,42 @@ class Ams_people_model extends App_Model
         if ($qty <= 0) {
             return ['success' => false, 'message' => _l('ams_qty_positive')];
         }
-        // Issue reports are only for assets the requester currently holds.
+        // Issue reports are about something the requester holds: an asset ("asset:ID")
+        // or an accessory check-out ("checkout:ID"); asset_id alone still works.
+        $checkoutId  = null;
+        $issueItemId = null;
         if ($type === 'issue') {
-            if (! $assetId || total_rows($this->t('ams_assets'), ['id' => $assetId, 'assigned_type' => 'staff', 'assigned_id' => (int) get_staff_user_id(), 'is_deleted' => 0]) === 0) {
-                return ['success' => false, 'message' => _l('ams_req_issue_own_asset')];
+            $ref = (string) ($input['issue_ref'] ?? '');
+            if (preg_match('/^(asset|checkout):(\d+)$/', $ref, $m)) {
+                [$assetId, $checkoutId] = $m[1] === 'asset' ? [(int) $m[2], null] : [null, (int) $m[2]];
             }
-            $qty = 1;
+            if ($checkoutId) {
+                $co = $this->db->where(['id' => $checkoutId, 'assigned_type' => 'staff', 'assigned_id' => (int) get_staff_user_id(), 'status' => 'open'])
+                    ->get($this->t('ams_item_checkouts'))->row();
+                if (! $co) {
+                    return ['success' => false, 'message' => _l('ams_req_issue_own_asset')];
+                }
+                $outstanding = (float) $co->qty - (float) $co->returned_qty;
+                if ($qty > $outstanding + 0.0001) {
+                    return ['success' => false, 'message' => _l('ams_req_issue_qty_above_held', ams_qty($outstanding))];
+                }
+                $issueItemId = (int) $co->item_id;
+            } else {
+                if (! $assetId || total_rows($this->t('ams_assets'), ['id' => $assetId, 'assigned_type' => 'staff', 'assigned_id' => (int) get_staff_user_id(), 'is_deleted' => 0]) === 0) {
+                    return ['success' => false, 'message' => _l('ams_req_issue_own_asset')];
+                }
+                $qty = 1;
+            }
         } else {
             $assetId = null;
         }
 
         $categoryId = (int) ($input['category_id'] ?? 0) ?: null;
-        $itemId     = in_array($type, ['accessory', 'consumable'], true) ? ((int) ($input['item_id'] ?? 0) ?: null) : null;
+        $itemId     = in_array($type, ['accessory', 'consumable'], true) ? ((int) ($input['item_id'] ?? 0) ?: null) : $issueItemId;
         if ($categoryId && total_rows($this->t('ams_categories'), ['id' => $categoryId]) === 0) {
             return ['success' => false, 'message' => _l('ams_invalid_value', _l('ams_category'))];
         }
-        if ($itemId && ! in_array((string) $this->db->select('kind')->where('id', $itemId)->get($this->t('ams_items'))->row('kind'), $this->request_item_kinds($type), true)) {
+        if ($itemId && $type !== 'issue' && ! in_array((string) $this->db->select('kind')->where('id', $itemId)->get($this->t('ams_items'))->row('kind'), $this->request_item_kinds($type), true)) {
             return ['success' => false, 'message' => _l('ams_invalid_value', _l('ams_item'))];
         }
 
@@ -344,6 +364,7 @@ class Ams_people_model extends App_Model
             'category_id'   => $categoryId,
             'item_id'       => $itemId,
             'asset_id'      => $assetId,
+            'checkout_id'   => $checkoutId,
             'qty'           => $qty,
             'subject'       => mb_substr($subject, 0, 191),
             'description'   => trim((string) ($input['description'] ?? '')) ?: null,
@@ -569,9 +590,66 @@ class Ams_people_model extends App_Model
             }
         } elseif (! staff_can('approve', 'ams_requests')) {
             return ['success' => false, 'message' => _l('access_denied')];
+        } elseif ($req->type === 'issue' && $req->checkout_id) {
+            $result = $this->resolve_accessory_issue($req, $input, $note);
+            if (! $result['success']) {
+                return $result;
+            }
         }
 
         $this->db->where('id', (int) $id)->update($this->t('ams_requests'), $update);
+
+        return ['success' => true];
+    }
+
+    /**
+     * Accessory issue: optionally take the faulty units back and write them off as
+     * damaged (return + negative adjustment, both in the stock ledger), and optionally
+     * give the same number of working units from stock. Neither = fixed / no action.
+     */
+    private function resolve_accessory_issue($req, $input, $note)
+    {
+        $this->load->model(AMS_MODULE_NAME . '/ams_inventory_model');
+        $co = $this->ams_inventory_model->get_checkout($req->checkout_id);
+        if (! $co) {
+            return ['success' => false, 'message' => _l('ams_not_found')];
+        }
+        $qty       = (float) $req->qty;
+        $ref       = $req->request_no . ($note ? ' - ' . $note : '');
+        $writeOff  = ! empty($input['write_off']);
+        $replace   = ! empty($input['replace']);
+
+        if ($writeOff) {
+            if (! ams_item_can('checkout', 'accessory') || ! ams_item_can('adjust', 'accessory')) {
+                return ['success' => false, 'message' => _l('access_denied')];
+            }
+            if ($co->status !== 'open' || (float) $co->qty - (float) $co->returned_qty < $qty - 0.0001) {
+                return ['success' => false, 'message' => _l('ams_req_issue_no_longer_held')];
+            }
+            $r = $this->ams_inventory_model->checkin($co->id, ['qty' => $qty, 'location_id' => $co->location_id, 'note' => _l('ams_req_issue_returned_faulty', $req->request_no)]);
+            if (! $r['success']) {
+                return $r;
+            }
+            $r = $this->ams_inventory_model->adjust($co->item_id, ['qty' => -$qty, 'location_id' => $co->location_id, 'reason' => 'damaged', 'note' => $ref]);
+            if (! $r['success']) {
+                return $r;
+            }
+        }
+        if ($replace) {
+            if (! ams_item_can('checkout', 'accessory')) {
+                return ['success' => false, 'message' => _l('access_denied')];
+            }
+            $r = $this->ams_inventory_model->checkout($co->item_id, [
+                'qty'             => $qty,
+                'location_id'     => (int) ($input['location_id'] ?? 0) ?: $co->location_id,
+                'assign_type'     => 'staff',
+                'assign_id_staff' => (int) $req->staff_id,
+                'note'            => _l('ams_req_issue_replacement', $req->request_no) . ($note ? ' - ' . $note : ''),
+            ]);
+            if (! $r['success']) {
+                return $r;
+            }
+        }
 
         return ['success' => true];
     }

@@ -508,7 +508,7 @@ $lang['ams_req_type']            = 'ধরন';
 $lang['ams_req_type_asset']      = 'নতুন সম্পদ (ল্যাপটপ, মনিটর, ...)';
 $lang['ams_req_type_accessory']  = 'আনুষঙ্গিক';
 $lang['ams_req_type_consumable'] = 'ব্যবহার্য / স্টক আইটেম';
-$lang['ams_req_type_issue']      = 'আমার সম্পদে সমস্যা';
+$lang['ams_req_type_issue'] = 'আমার কাছে থাকা সম্পদ বা এক্সেসরিতে সমস্যা';
 $lang['ams_req_subject']         = 'বিষয়';
 $lang['ams_req_description']     = 'বিস্তারিত / কারণ';
 $lang['ams_requester']           = 'অনুরোধকারী';
@@ -546,7 +546,7 @@ $lang['ams_req_now']             = 'অনুরোধের বর্তমা�
 $lang['ams_req_not_approved']    = 'শুধুমাত্র অনুমোদিত অনুরোধ সম্পন্ন করা যায়।';
 $lang['ams_req_fulfilled_msg']   = 'অনুরোধ %s সম্পন্ন হয়েছে।';
 $lang['ams_req_cancelled_msg']   = 'অনুরোধ বাতিল করা হয়েছে।';
-$lang['ams_req_issue_own_asset'] = 'আপনার কাছে বর্তমানে থাকা সম্পদগুলোর একটি নির্বাচন করুন।';
+$lang['ams_req_issue_own_asset'] = 'বর্তমানে আপনার কাছে থাকা একটি সম্পদ বা এক্সেসরি বাছাই করুন।';
 
 // Department approvers
 $lang['ams_department_approvers']      = 'বিভাগীয় অনুমোদনকারী';
@@ -1273,3 +1273,17 @@ $lang['ams_import_notify_items'] = 'ইমপোর্ট করা প্রা
 $lang['ams_icon_none'] = 'কোনো আইকন নেই';
 $lang['ams_req_no_available_assets_long'] = 'এখন কোনো সম্পদ দেওয়া যাবে না: সম্পদটি ইন স্টোরে (ডিপ্লয়যোগ্য স্ট্যাটাস), চেক-আউট না করা ও মুছে না ফেলা অবস্থায় থাকতে হবে। ইন স্টোর স্ট্যাটাসে সম্পদ যোগ করুন, অথবা এই অনুরোধ থেকে ক্রয় আদেশ দিয়ে কিনুন - তারপর এই পেজ রিলোড করুন।';
 $lang['ams_req_no_available_items_long'] = 'এই ধরনের কোনো সক্রিয় আইটেম এখনও নেই। আইটেম তৈরি করে স্টক গ্রহণ করুন (Accessories / Consumables / Stock Items), অথবা এই অনুরোধ থেকে ক্রয় আদেশ দিয়ে কিনুন।';
+$lang['ams_item_checked_out_success'] = '%s-কে চেক-আউট করা হয়েছে';
+
+// ─── Issue reports on accessories ────────────────────────────────────────
+$lang['ams_req_issue_item'] = 'সম্পদ বা এক্সেসরি';
+$lang['ams_req_issue_held'] = '%s আছে';
+$lang['ams_req_issue_held_since'] = 'যখন থেকে কাছে আছে';
+$lang['ams_req_issue_qty_above_held'] = 'এই এক্সেসরির মাত্র %s আপনার কাছে আছে।';
+$lang['ams_req_issue_no_longer_held'] = 'অনুরোধকারীর কাছে এখন এত সংখ্যক এক্সেসরি নেই; "write off" টিক তুলে দিন বা আগে চেক-আউটটি দেখুন।';
+$lang['ams_req_issue_returned_faulty'] = 'ত্রুটিপূর্ণ হিসেবে ফেরত (%s)';
+$lang['ams_req_issue_replacement'] = '%s-এর বদলি';
+$lang['ams_req_issue_resolve_help'] = 'ত্রুটিপূর্ণ এক্সেসরি (%s টি)। কী করবেন বাছাই করুন; ঠিক করা হলে ও কিছু বদল না হলে দুটোই টিক ছাড়া রাখুন।';
+$lang['ams_req_issue_write_off'] = '%s টি ত্রুটিপূর্ণ ইউনিট ফেরত নিন ও ক্ষতিগ্রস্ত হিসেবে বাদ দিন';
+$lang['ams_req_issue_replace'] = 'বদলি হিসেবে স্টক থেকে %s টি ভালো ইউনিট দিন';
+$lang['ams_req_issue_replace_from'] = 'যে অবস্থান থেকে বদলি';

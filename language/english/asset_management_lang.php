@@ -503,7 +503,7 @@ $lang['ams_req_type']            = 'Type';
 $lang['ams_req_type_asset']      = 'New asset (laptop, monitor, ...)';
 $lang['ams_req_type_accessory']  = 'Accessory';
 $lang['ams_req_type_consumable'] = 'Consumable / stock item';
-$lang['ams_req_type_issue']      = 'Issue with my asset';
+$lang['ams_req_type_issue'] = 'Issue with an asset or accessory I hold';
 $lang['ams_req_subject']         = 'Subject';
 $lang['ams_req_description']     = 'Details / reason';
 $lang['ams_requester']           = 'Requested By';
@@ -541,7 +541,7 @@ $lang['ams_req_now']             = 'Request is now: %s';
 $lang['ams_req_not_approved']    = 'Only approved requests can be completed.';
 $lang['ams_req_fulfilled_msg']   = 'Request %s completed.';
 $lang['ams_req_cancelled_msg']   = 'Request cancelled.';
-$lang['ams_req_issue_own_asset'] = 'Choose one of the assets you currently hold.';
+$lang['ams_req_issue_own_asset'] = 'Choose an asset or accessory that you currently hold.';
 
 // Department approvers
 $lang['ams_department_approvers']      = 'Department Approvers';
@@ -1266,3 +1266,17 @@ $lang['ams_import_notify_items'] = 'Send low-stock alerts for imported opening s
 $lang['ams_icon_none'] = 'No icon';
 $lang['ams_req_no_available_assets_long'] = 'No asset can be given right now: an asset must be In Store (a deployable status), not checked out and not deleted. Add the asset with status In Store, or buy it with a purchase order from this request - then reload this page.';
 $lang['ams_req_no_available_items_long'] = 'No active item of this kind exists yet. Create the item (Accessories / Consumables / Stock Items) and receive stock, or buy it with a purchase order from this request.';
+$lang['ams_item_checked_out_success'] = 'Checked out to %s';
+
+// ─── Issue reports on accessories ────────────────────────────────────────
+$lang['ams_req_issue_item'] = 'Asset or accessory';
+$lang['ams_req_issue_held'] = '%s held';
+$lang['ams_req_issue_held_since'] = 'Held since';
+$lang['ams_req_issue_qty_above_held'] = 'You hold only %s of this accessory.';
+$lang['ams_req_issue_no_longer_held'] = 'The requester no longer holds that many of this accessory; untick "write off" or check the check-out first.';
+$lang['ams_req_issue_returned_faulty'] = 'Returned faulty (%s)';
+$lang['ams_req_issue_replacement'] = 'Replacement for %s';
+$lang['ams_req_issue_resolve_help'] = 'Faulty accessory (%s unit/s). Choose what to do; leave both unticked if it was fixed and nothing changes hands.';
+$lang['ams_req_issue_write_off'] = 'Take back the %s faulty unit/s and write them off as damaged';
+$lang['ams_req_issue_replace'] = 'Give %s working unit/s from stock as replacement';
+$lang['ams_req_issue_replace_from'] = 'Replacement from location';

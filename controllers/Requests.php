@@ -61,6 +61,12 @@ class Requests extends AdminController
         $data['req']        = $req;
         $data['can_decide'] = $this->ams_people_model->can_decide($req);
         $data['locations']  = ams_location_options(true);
+        // Issue about an accessory: the check-out it is about (shown, and used when resolving).
+        $data['issue_checkout'] = null;
+        if ($req->type === 'issue' && ! empty($req->checkout_id)) {
+            $this->load->model(AMS_MODULE_NAME . '/ams_inventory_model');
+            $data['issue_checkout'] = $this->ams_inventory_model->get_checkout($req->checkout_id);
+        }
 
         // Fulfilment choices: deployable, unassigned assets (matching category first) or stock items.
         $data['assets'] = [];
