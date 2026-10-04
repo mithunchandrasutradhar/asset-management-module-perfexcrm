@@ -872,3 +872,17 @@ add_option('ams_mt_responsible_required', '0'); // a job must have responsible s
 add_option('ams_mt_notify_managers', '1');      // asset managers still get due / overdue alerts of assigned jobs
 add_option('ams_mt_overdue_days', '3');         // repeat overdue reminders every N days
 add_option('ams_mt_ack_days', '2');             // alert managers when not acknowledged after N days (0 = off)
+
+// ─── Responsible departments (schema v12) ─────────────────────────────────
+// Departments chosen in the Responsible picker (comma list of ids): they filter the
+// staff list, and a chosen department none of whose members was picked is
+// responsible as a whole.
+foreach (['ams_maintenance', 'ams_maintenance_schedules'] as $mtTable) {
+    if (! $CI->db->field_exists('resp_departments', $p . $mtTable)) {
+        $CI->db->query('ALTER TABLE `' . $p . $mtTable . '` ADD `resp_departments` VARCHAR(255) NULL');
+    }
+    if ($CI->db->field_exists('resp_department_id', $p . $mtTable)) { // single-department draft of v12
+        $CI->db->query('UPDATE `' . $p . $mtTable . '` SET resp_departments = resp_department_id WHERE resp_department_id IS NOT NULL AND resp_departments IS NULL');
+        $CI->db->query('ALTER TABLE `' . $p . $mtTable . '` DROP COLUMN `resp_department_id`');
+    }
+}

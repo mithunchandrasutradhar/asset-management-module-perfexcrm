@@ -16,7 +16,7 @@ define('AMS_MODULE_NAME', 'asset_management');
 // re-runs the (idempotent) installer on the next admin page load, so updated
 // module files never run against a stale schema and no manual
 // deactivate/reactivate is needed.
-define('AMS_SCHEMA_VERSION', 11);
+define('AMS_SCHEMA_VERSION', 12);
 
 define('AMS_UPLOAD_PATH', FCPATH . 'uploads/asset_management/');
 

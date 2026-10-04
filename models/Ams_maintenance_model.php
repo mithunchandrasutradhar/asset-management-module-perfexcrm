@@ -58,12 +58,12 @@ class Ams_maintenance_model extends App_Model
         }
 
         // Responsible staff / departments: only staff who may edit jobs change them.
-        $setResponsible = array_key_exists('responsible', $input) || ! $id;
-        $responsible    = $this->parse_responsible($input['responsible'] ?? []);
+        $setResponsible = ! empty($input['responsible_posted']) || ! $id;
+        $responsible    = $this->parse_responsible($input);
         if (isset($responsible['error'])) {
             return ['success' => false, 'message' => $responsible['error']];
         }
-        if ($setResponsible && ! $responsible && get_option('ams_mt_responsible_required') == '1') {
+        if ($setResponsible && ! $responsible['entries'] && get_option('ams_mt_responsible_required') == '1') {
             return ['success' => false, 'message' => _l('ams_field_required', _l('ams_mt_responsible'))];
         }
 
@@ -91,6 +91,9 @@ class Ams_maintenance_model extends App_Model
         if ($cost !== '') {
             $data['cost'] = round((float) $cost, 2);
         }
+        if ($setResponsible) {
+            $data['resp_departments'] = $responsible['departments'];
+        }
 
         if ($id) {
             $row = $this->get($id);
@@ -104,7 +107,7 @@ class Ams_maintenance_model extends App_Model
             }
             $this->db->where('id', (int) $id)->update($this->t('ams_maintenance'), $data);
             if ($setResponsible) {
-                $this->set_job_responsible($this->get($id), $responsible);
+                $this->set_job_responsible($this->get($id), $responsible['entries']);
             }
 
             return ['success' => true, 'id' => (int) $id, 'message' => _l('updated_successfully', _l('ams_maintenance'))];
@@ -123,7 +126,7 @@ class Ams_maintenance_model extends App_Model
         $this->history($assetId, _l('ams_mt_history_created', $data['title']));
         log_activity('AMS maintenance created [Asset: ' . $asset->asset_tag . ', ' . $data['title'] . ']');
 
-        $this->set_job_responsible($this->get($newId), $responsible);
+        $this->set_job_responsible($this->get($newId), $responsible['entries']);
 
         if (! empty($input['start_now'])) {
             $started = $this->start($newId, $input);
@@ -333,6 +336,7 @@ class Ams_maintenance_model extends App_Model
             'type'         => 'repair',
             'title'        => mb_substr(_l('ams_mt_followup_title', $job->title), 0, 191),
             'supplier_id'  => $job->supplier_id,
+            'resp_departments' => $job->resp_departments,
             'status'       => 'scheduled',
             'due_date'     => date('Y-m-d', strtotime('+7 days')),
             'notes'        => $resolution ?: null,
@@ -488,38 +492,73 @@ class Ams_maintenance_model extends App_Model
 
     // ─── Responsibility ───────────────────────────────────────────────────
 
-    /** Options for the "Responsible" picker: active staff (s:ID) and departments (d:ID), as optgroups. */
+    /** Options for the Department and Staff pickers; each staff member carries their department ids for filtering. */
     public function responsible_options()
     {
-        $staff = array_map(fn ($s) => ['id' => 's:' . $s['staffid'], 'name' => $s['firstname'] . ' ' . $s['lastname']], ams_staff_options());
-        $depts = array_map(fn ($d) => ['id' => 'd:' . $d['departmentid'], 'name' => $d['name']], ams_department_options());
+        $map = [];
+        foreach ($this->db->select('staffid, departmentid')->get($this->t('staff_departments'))->result_array() as $r) {
+            $map[(int) $r['staffid']][] = (int) $r['departmentid'];
+        }
+        $staff = array_map(fn ($s) => [
+            'id'    => (int) $s['staffid'],
+            'name'  => $s['firstname'] . ' ' . $s['lastname'],
+            'depts' => $map[(int) $s['staffid']] ?? [],
+        ], ams_staff_options());
+        $depts = array_map(fn ($d) => ['id' => (int) $d['departmentid'], 'name' => $d['name']], ams_department_options());
 
         return ['staff' => $staff, 'departments' => $depts];
     }
 
-    /** Posted s:ID / d:ID values → [['staff_id' =>, 'department_id' =>], ...] (active staff, existing departments). */
-    public function parse_responsible($values)
+    /**
+     * Posted responsible_departments[] + responsible_staff[] → the responsible entries.
+     * When departments are chosen, every chosen staff member must belong to one of them;
+     * a chosen department none of whose members was picked is responsible as a whole.
+     * Without departments, any active staff member can be chosen.
+     * Returns ['entries' => [['staff_id' =>, 'department_id' =>], ...], 'departments' => '1,3'|null] or ['error' => ...].
+     */
+    public function parse_responsible($input)
     {
-        $out = [];
-        foreach ((array) $values as $v) {
-            if (! preg_match('/^([sd]):(\d+)$/', (string) $v, $m)) {
-                continue;
+        $deptIds  = array_values(array_unique(array_filter(array_map('intval', (array) ($input['responsible_departments'] ?? [])))));
+        $staffIds = array_values(array_unique(array_filter(array_map('intval', (array) ($input['responsible_staff'] ?? [])))));
+
+        $members = []; // department id => member staff ids
+        foreach ($deptIds as $d) {
+            if (total_rows($this->t('departments'), ['departmentid' => $d]) === 0) {
+                return ['error' => _l('ams_invalid_value', _l('ams_mt_resp_department'))];
             }
-            $id = (int) $m[2];
-            if ($m[1] === 's') {
-                if (total_rows($this->t('staff'), ['staffid' => $id, 'active' => 1]) === 0) {
-                    return ['error' => _l('ams_invalid_value', _l('ams_mt_responsible'))];
-                }
-                $out['s' . $id] = ['staff_id' => $id, 'department_id' => null];
-            } else {
-                if (total_rows($this->t('departments'), ['departmentid' => $id]) === 0) {
-                    return ['error' => _l('ams_invalid_value', _l('ams_mt_responsible'))];
-                }
-                $out['d' . $id] = ['staff_id' => null, 'department_id' => $id];
+            $members[$d] = array_map('intval', array_column($this->db->select('staffid')->where('departmentid', $d)
+                ->get($this->t('staff_departments'))->result_array(), 'staffid'));
+        }
+
+        $entries = [];
+        foreach ($staffIds as $id) {
+            if (total_rows($this->t('staff'), ['staffid' => $id, 'active' => 1]) === 0) {
+                return ['error' => _l('ams_invalid_value', _l('ams_mt_resp_staff'))];
+            }
+            if ($deptIds && ! array_filter($members, fn ($m) => in_array($id, $m, true))) {
+                return ['error' => _l('ams_mt_staff_not_in_department', e(get_staff_full_name($id)))];
+            }
+            $entries[] = ['staff_id' => $id, 'department_id' => null];
+        }
+        // Departments where nobody was picked: the whole department is responsible.
+        foreach ($members as $d => $m) {
+            if (! array_intersect($m, $staffIds)) {
+                $entries[] = ['staff_id' => null, 'department_id' => $d];
             }
         }
 
-        return array_values($out);
+        return ['entries' => $entries, 'departments' => $deptIds ? implode(',', $deptIds) : null];
+    }
+
+    /** Form values of a job / schedule: ['departments' => [ids], 'staff' => [ids]]. */
+    public function responsible_form_values($relType, $row)
+    {
+        $rows = $this->responsible($relType, $row->id);
+
+        return [
+            'departments' => array_values(array_filter(array_map('intval', explode(',', (string) $row->resp_departments)))),
+            'staff'       => array_values(array_map('intval', array_filter(array_column($rows, 'staff_id')))),
+        ];
     }
 
     /** Responsible rows of a job / schedule with display names. */
@@ -702,10 +741,6 @@ class Ams_maintenance_model extends App_Model
         }
     }
 
-    public function get_schedule_responsible_values($scheduleId)
-    {
-        return array_column($this->responsible('schedule', $scheduleId), 'value');
-    }
 
     private function asset_label($assetId)
     {
@@ -757,8 +792,9 @@ class Ams_maintenance_model extends App_Model
     }
 
     /** Bulk: add or replace the responsible people of several open jobs. */
-    public function bulk_responsible(array $jobIds, array $entries, $mode)
+    public function bulk_responsible(array $jobIds, array $parsed, $mode)
     {
+        $entries = $parsed['entries'];
         $done = 0;
         foreach (array_unique(array_map('intval', $jobIds)) as $id) {
             $job = $this->get($id);
@@ -768,6 +804,8 @@ class Ams_maintenance_model extends App_Model
             $target = $entries;
             if ($mode === 'add') {
                 $target = array_merge(array_map(fn ($r) => ['staff_id' => $r['staff_id'], 'department_id' => $r['department_id']], $this->responsible('job', $id)), $entries);
+            } else {
+                $this->db->where('id', (int) $id)->update($this->t('ams_maintenance'), ['resp_departments' => $parsed['departments']]);
             }
             $this->set_job_responsible($job, $target);
             $done++;
@@ -862,10 +900,11 @@ class Ams_maintenance_model extends App_Model
         if (! $next) {
             return ['success' => false, 'message' => _l('ams_field_required', _l('ams_mt_next_due'))];
         }
-        $responsible = $this->parse_responsible($input['responsible'] ?? []);
-        if (isset($responsible['error'])) {
-            return ['success' => false, 'message' => $responsible['error']];
+        $parsed = $this->parse_responsible($input);
+        if (isset($parsed['error'])) {
+            return ['success' => false, 'message' => $parsed['error']];
         }
+        $responsible = $parsed['entries'];
         if (! $responsible && get_option('ams_mt_responsible_required') == '1') {
             return ['success' => false, 'message' => _l('ams_field_required', _l('ams_mt_responsible'))];
         }
@@ -878,6 +917,7 @@ class Ams_maintenance_model extends App_Model
             'next_due'       => $next,
             'supplier_id'    => (int) ($input['supplier_id'] ?? 0) ?: null,
             'active'         => ! empty($input['active']) ? 1 : 0,
+            'resp_departments' => $parsed['departments'],
         ];
 
         if ($data['supplier_id'] && total_rows($this->t('ams_suppliers'), ['id' => $data['supplier_id']]) === 0) {
@@ -974,6 +1014,7 @@ class Ams_maintenance_model extends App_Model
                     'type'         => $s['type'],
                     'title'        => $s['title'],
                     'supplier_id'  => $s['supplier_id'],
+                    'resp_departments' => $s['resp_departments'],
                     'status'       => 'scheduled',
                     'due_date'     => $s['next_due'],
                     'date_created' => date('Y-m-d H:i:s'),

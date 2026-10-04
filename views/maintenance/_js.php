@@ -18,7 +18,7 @@
         var f = $('#ams-mt-form');
         f[0].reset();
         f.find('select.selectpicker').selectpicker('refresh');
-        f.find('#ams_mt_responsible').selectpicker('val', []);
+        ams_resp_set('ams_mt_responsible', {});
         f.find('[name="id"]').val('');
         f.find('.ams-mt-new-only, .ams-mt-asset').removeClass('hide');
         $('#ams_mt_modal').modal('show');
@@ -33,7 +33,7 @@
             f.find('[name="title"]').val(r.title);
             f.find('[name="type"]').selectpicker('val', r.type);
             f.find('[name="supplier_id"]').selectpicker('val', r.supplier_id || '');
-            f.find('#ams_mt_responsible').selectpicker('val', r.responsible || []);
+            ams_resp_set('ams_mt_responsible', r.responsible);
             f.find('[name="due_date"]').val(r.due_date);
             f.find('[name="notes"]').val(r.notes || '');
             f.find('.ams-mt-new-only, .ams-mt-asset').addClass('hide');

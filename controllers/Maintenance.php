@@ -111,7 +111,7 @@ class Maintenance extends AdminController
         foreach (['due_date', 'start_date', 'end_date'] as $f) {
             $job->{$f} = $job->{$f} ? _d($job->{$f}) : '';
         }
-        $job->responsible = array_column($this->ams_maintenance_model->responsible('job', $job->id), 'value');
+        $job->responsible = $this->ams_maintenance_model->responsible_form_values('job', $job);
         $this->json_raw($job);
     }
 
@@ -121,12 +121,7 @@ class Maintenance extends AdminController
         if (staff_cant($id ? 'edit' : 'create', 'ams_maintenance')) {
             $this->json(['success' => false, 'message' => _l('access_denied')]);
         }
-        $input = $this->input->post();
-        // The picker posts nothing when cleared: the hidden marker says the field was on the form.
-        if (! empty($input['responsible_posted']) && ! isset($input['responsible'])) {
-            $input['responsible'] = [];
-        }
-        $this->json($this->ams_maintenance_model->save($input, $id ?: null));
+        $this->json($this->ams_maintenance_model->save($this->input->post(), $id ?: null));
     }
 
     public function start($id)
@@ -175,12 +170,12 @@ class Maintenance extends AdminController
     public function bulk_responsible()
     {
         $this->require_json_cap('edit');
-        $entries = $this->ams_maintenance_model->parse_responsible($this->input->post('responsible') ?: []);
+        $entries = $this->ams_maintenance_model->parse_responsible($this->input->post());
         if (isset($entries['error'])) {
             $this->json(['success' => false, 'message' => $entries['error']]);
         }
         $mode = $this->input->post('mode') === 'replace' ? 'replace' : 'add';
-        if (! $entries && $mode === 'add') {
+        if (! $entries['entries'] && $mode === 'add') {
             $this->json(['success' => false, 'message' => _l('ams_field_required', _l('ams_mt_responsible'))]);
         }
         $this->json($this->ams_maintenance_model->bulk_responsible((array) $this->input->post('ids'), $entries, $mode));
@@ -217,7 +212,7 @@ class Maintenance extends AdminController
         $s = $this->ams_maintenance_model->get_schedule($id);
         if ($s) {
             $s->next_due    = _d($s->next_due);
-            $s->responsible = $this->ams_maintenance_model->get_schedule_responsible_values($s->id);
+            $s->responsible = $this->ams_maintenance_model->responsible_form_values('schedule', $s);
         }
         $this->json_raw($s ?: []);
     }

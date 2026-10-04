@@ -99,7 +99,7 @@ Everything lives in the **Assets** menu in the Perfex sidebar.
   - jobs are opened automatically a set number of days before the due date, and the asset managers are notified;
   - the next date counts from when the work was actually done;
   - a cancelled or deleted job moves the schedule on to its next date.
-- **Responsible staff:** each job and schedule can have responsible staff and / or Perfex departments.
+- **Responsible staff:** each job and schedule has **Responsible departments** (optional, several) and **Responsible staff** (several). Choosing departments limits the staff list to their members; a chosen department with none of its members picked is responsible as a whole. Without a department, any active staff member can be chosen.
   - Jobs opened by a schedule copy its responsible people; a "not working" check can open a follow-up repair job for the same people.
   - Responsible staff are notified when assigned, when the job is due and when it is overdue (repeated every N days). Asset managers also get the alerts (setting), and are told once when a job is not acknowledged after N days.
   - They see their jobs in **My Assets → My Maintenance Jobs** and on the job page can **Acknowledge**, add **progress notes**, **Start** and **Complete** (with "Is the asset working?": working / partly / not working) without the Maintenance *Edit* permission.

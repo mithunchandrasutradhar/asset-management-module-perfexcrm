@@ -54,7 +54,7 @@
                     <div class="col-md-6"><?= render_select('type', $types, ['id', 'name'], 'ams_mt_type', 'preventive', [], [], '', '', false); ?></div>
                     <div class="col-md-6"><?= render_select('supplier_id', $suppliers, ['id', 'name'], 'ams_mt_vendor'); ?></div>
                 </div>
-                <?php $this->load->view(AMS_MODULE_NAME . '/maintenance/_responsible_select', ['options' => $responsible, 'selected' => [], 'select_id' => 'ams_sch_responsible']); ?>
+                <?php $this->load->view(AMS_MODULE_NAME . '/maintenance/_responsible_select', ['options' => $responsible, 'select_id' => 'ams_sch_responsible']); ?>
                 <div class="checkbox checkbox-primary">
                     <input type="checkbox" name="active" id="sch_active" value="1" checked>
                     <label for="sch_active"><?= _l('ams_active'); ?></label>
@@ -87,7 +87,7 @@
         f[0].reset();
         f.find('select.selectpicker').selectpicker('refresh');
         f.find('[name="id"]').val('');
-        f.find('#ams_sch_responsible').selectpicker('val', []);
+        ams_resp_set('ams_sch_responsible', {});
         f.find('.ams-sch-assets').removeClass('hide');
         $('#ams_sch_modal').modal('show');
     }
@@ -105,7 +105,7 @@
             f.find('[name="type"]').selectpicker('val', s.type);
             f.find('[name="supplier_id"]').selectpicker('val', s.supplier_id || '');
             f.find('[name="active"]').prop('checked', s.active == 1);
-            f.find('#ams_sch_responsible').selectpicker('val', s.responsible || []);
+            ams_resp_set('ams_sch_responsible', s.responsible);
             $('#ams_sch_modal').modal('show');
         });
     }

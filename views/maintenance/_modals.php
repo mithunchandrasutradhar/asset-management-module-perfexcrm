@@ -31,7 +31,7 @@ $assets      = $assets ?? [];
                     <div class="col-md-6"><?= render_select('type', $types, ['id', 'name'], 'ams_mt_type', 'repair', [], [], '', '', false); ?></div>
                     <div class="col-md-6"><?= render_date_input('due_date', 'ams_mt_due_date'); ?></div>
                 </div>
-                <?php $this->load->view(AMS_MODULE_NAME . '/maintenance/_responsible_select', ['options' => $responsible, 'selected' => [], 'select_id' => 'ams_mt_responsible']); ?>
+                <?php $this->load->view(AMS_MODULE_NAME . '/maintenance/_responsible_select', ['options' => $responsible, 'select_id' => 'ams_mt_responsible']); ?>
                 <?= render_select('supplier_id', $suppliers, ['id', 'name'], 'ams_mt_vendor'); ?>
                 <?= render_textarea('notes', 'ams_notes', $request ? (string) $request->description : ''); ?>
                 <div class="ams-mt-new-only">

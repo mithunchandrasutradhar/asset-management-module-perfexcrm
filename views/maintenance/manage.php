@@ -61,7 +61,7 @@ $mine    = ! $viewAll || $this->input->get('mine');
             </div>
             <div class="modal-body">
                 <p class="text-muted"><?= _l('ams_mt_bulk_help'); ?></p>
-                <?php $this->load->view(AMS_MODULE_NAME . '/maintenance/_responsible_select', ['options' => $responsible, 'selected' => [], 'select_id' => 'ams_mt_bulk_responsible']); ?>
+                <?php $this->load->view(AMS_MODULE_NAME . '/maintenance/_responsible_select', ['options' => $responsible, 'select_id' => 'ams_mt_bulk_responsible']); ?>
                 <div class="radio radio-primary"><input type="radio" name="ams_mt_bulk_mode" id="ams_mt_bulk_add" value="add" checked><label for="ams_mt_bulk_add"><?= _l('ams_mt_bulk_add'); ?></label></div>
                 <div class="radio radio-primary"><input type="radio" name="ams_mt_bulk_mode" id="ams_mt_bulk_replace" value="replace"><label for="ams_mt_bulk_replace"><?= _l('ams_mt_bulk_replace'); ?></label></div>
             </div>
@@ -99,7 +99,8 @@ $mine    = ! $viewAll || $this->input->get('mine');
         $(el).addClass('disabled');
         $.post(admin_url + 'asset_management/maintenance/bulk_responsible', {
             ids: ids,
-            responsible: $('#ams_mt_bulk_responsible').selectpicker('val') || [],
+            responsible_departments: $('#ams_mt_bulk_responsible_dept').selectpicker('val') || [],
+            responsible_staff: $('#ams_mt_bulk_responsible_staff').selectpicker('val') || [],
             mode: $('input[name="ams_mt_bulk_mode"]:checked').val()
         }).done(function(r) {
             r = typeof r === 'string' ? JSON.parse(r) : r;
