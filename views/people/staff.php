@@ -21,6 +21,9 @@
                     <div class="panel-body">
                         <ul class="nav nav-tabs nav-tabs-horizontal" role="tablist">
                             <li class="active"><a href="#tab_assets" data-toggle="tab"><?= _l('ams_assets'); ?> <span class="badge"><?= (int) $holdings['assets']; ?></span></a></li>
+                            <?php if ($canMt) { ?>
+                            <li><a href="#tab_jobs" data-toggle="tab"><?= _l('ams_mt_maintenance_jobs'); ?> <?php if ($mt_open) { ?><span class="badge"><?= (int) $mt_open; ?></span><?php } ?></a></li>
+                            <?php } ?>
                             <li><a href="#tab_acceptances" data-toggle="tab"><?= _l('ams_acceptances'); ?> <?php if ($holdings['acceptances']) { ?><span class="badge"><?= (int) $holdings['acceptances']; ?></span><?php } ?></a></li>
                         </ul>
                         <div class="tab-content tw-mt-4">
@@ -30,6 +33,14 @@
                                     _l('ams_assigned_to'), _l('ams_department'), _l('ams_location'), _l('ams_warranty'), _l('ams_purchase_cost'), _l('ams_purchase_date'),
                                 ], 'ams-staff-assets'); ?>
                             </div>
+                            <?php if ($canMt) { ?>
+                            <div class="tab-pane" id="tab_jobs">
+                                <?php render_datatable([
+                                    '', '#', _l('ams_asset'), _l('ams_mt_title'), _l('ams_mt_type'), _l('ams_status'), _l('ams_mt_responsible'),
+                                    _l('ams_mt_due_date'), _l('ams_mt_start_date'), _l('ams_mt_end_date'), _l('ams_supplier'), _l('ams_mt_cost'),
+                                ], 'ams-staff-maintenance'); ?>
+                            </div>
+                            <?php } ?>
                             <div class="tab-pane" id="tab_acceptances">
                                 <?php render_datatable([
                                     _l('ams_date'), _l('ams_asset'), _l('ams_status'), _l('ams_responded'), _l('ams_signed_name'), _l('ams_assigned_by'),
@@ -68,6 +79,9 @@
         var id = <?= (int) $staff->staffid; ?>;
         initDataTable('.table-ams-staff-assets', admin_url + 'asset_management/people/assets_table/' + id, [0], [0], {}, [1, 'asc'])
             .columns([0, 7, 11, 12]).visible(false, false).columns.adjust();
+        <?php if ($canMt) { ?>
+        initDataTable('.table-ams-staff-maintenance', admin_url + 'asset_management/maintenance/staff_table/' + id, [0, 6], [0, 6], {}, [1, 'desc']).column(0).visible(false, false);
+        <?php } ?>
         initDataTable('.table-ams-staff-acceptances', admin_url + 'asset_management/people/acceptances_table/' + id, [], [], {}, [0, 'desc']);
     });
 

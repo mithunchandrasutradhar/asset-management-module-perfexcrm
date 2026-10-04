@@ -664,6 +664,10 @@ $amsTemplates = [
         '<p>{ams_details} is due on {ams_due_date} for <strong>{ams_item}</strong>.</p><p><a href="{ams_link}">{ams_link}</a></p>'],
     ['ams-license-expiring', 'Licence expiring (to asset managers)', 'Licence expiring: {ams_item}',
         '<p>The licence <strong>{ams_item}</strong> expires on {ams_due_date}. {ams_details}</p><p><a href="{ams_link}">{ams_link}</a></p>'],
+    ['ams-maintenance-assigned', 'Maintenance job assigned (to responsible staff)', 'Maintenance assigned to you: {ams_item}',
+        '<p>Hi {staff_firstname},</p><p>You are responsible for the maintenance job <strong>{ams_details}</strong> on <strong>{ams_item}</strong>.</p><p>Due: {ams_due_date}<br>Responsible: {ams_responsible}</p><p><a href="{ams_link}">{ams_link}</a></p>'],
+    ['ams-maintenance-overdue', 'Maintenance job overdue (to responsible staff)', 'Maintenance overdue: {ams_item}',
+        '<p>Hi {staff_firstname},</p><p>The maintenance job <strong>{ams_details}</strong> on <strong>{ams_item}</strong> was due on {ams_due_date} and is not completed yet.</p><p>Responsible: {ams_responsible}</p><p><a href="{ams_link}">{ams_link}</a></p>'],
 ];
 foreach ($amsTemplates as $tpl) {
     create_email_template($tpl[2], $tpl[3], 'ams', $tpl[1], $tpl[0]);
@@ -815,3 +819,56 @@ if ($CI->db->table_exists($p . 'ams_audit_log')) {
 $CI->db->where('code', 'SKU:ITM')->delete($p . 'ams_tag_sequences');
 $CI->db->query('DELETE FROM `' . $p . 'notifications` WHERE description IN ("ams_notify_low_stock", "ams_notify_out_of_stock") OR link LIKE "asset_management/inventory%"');
 $CI->db->query('UPDATE `' . $p . 'emailtemplates` SET name = CONCAT("HostBill ", name) WHERE slug = "ams-low-stock" AND name LIKE "Low / out-of-stock alert%"');
+
+// ─── Maintenance responsibility (schema v11) ──────────────────────────────
+// Responsible staff and / or Perfex departments per maintenance job or schedule.
+// rel_type: job | schedule ; exactly one of staff_id / department_id is set.
+if (! $CI->db->table_exists($p . 'ams_maintenance_staff')) {
+    $CI->db->query('CREATE TABLE `' . $p . "ams_maintenance_staff` (
+        `id` INT(11) NOT NULL AUTO_INCREMENT,
+        `rel_type` VARCHAR(10) NOT NULL,
+        `rel_id` INT(11) NOT NULL,
+        `staff_id` INT(11) NULL,
+        `department_id` INT(11) NULL,
+        `added_by` INT(11) NULL,
+        `date_added` DATETIME NOT NULL,
+        PRIMARY KEY (`id`),
+        KEY `rel` (`rel_type`, `rel_id`),
+        KEY `staff_id` (`staff_id`),
+        KEY `department_id` (`department_id`)
+    ) " . $engine);
+}
+
+// Progress notes on a job. type: note (written by staff) | system (assigned, acknowledged, ...)
+if (! $CI->db->table_exists($p . 'ams_maintenance_notes')) {
+    $CI->db->query('CREATE TABLE `' . $p . "ams_maintenance_notes` (
+        `id` INT(11) NOT NULL AUTO_INCREMENT,
+        `job_id` INT(11) NOT NULL,
+        `type` VARCHAR(10) NOT NULL DEFAULT 'note',
+        `note` TEXT NOT NULL,
+        `staff_id` INT(11) NULL,
+        `date_created` DATETIME NOT NULL,
+        PRIMARY KEY (`id`),
+        KEY `job_id` (`job_id`)
+    ) " . $engine);
+}
+
+// check_result: working | partial | not_working (recorded on completion).
+foreach ([
+    'assigned_at'         => 'DATETIME NULL',
+    'acknowledged_by'     => 'INT(11) NULL',
+    'acknowledged_at'     => 'DATETIME NULL',
+    'ack_alerted_at'      => 'DATETIME NULL',
+    'overdue_notified_at' => 'DATETIME NULL',
+    'check_result'        => 'VARCHAR(20) NULL',
+    'followup_job_id'     => 'INT(11) NULL',
+] as $col => $def) {
+    if (! $CI->db->field_exists($col, $p . 'ams_maintenance')) {
+        $CI->db->query('ALTER TABLE `' . $p . 'ams_maintenance` ADD `' . $col . '` ' . $def);
+    }
+}
+
+add_option('ams_mt_responsible_required', '0'); // a job must have responsible staff
+add_option('ams_mt_notify_managers', '1');      // asset managers still get due / overdue alerts of assigned jobs
+add_option('ams_mt_overdue_days', '3');         // repeat overdue reminders every N days
+add_option('ams_mt_ack_days', '2');             // alert managers when not acknowledged after N days (0 = off)

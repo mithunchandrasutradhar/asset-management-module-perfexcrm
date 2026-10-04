@@ -601,11 +601,21 @@ class Ams_people_model extends App_Model
         }
 
         $h = $this->holdings($staffId);
-        if ($h['assets'] === 0) {
+        $this->load->model(AMS_MODULE_NAME . '/ams_maintenance_model');
+        $jobs = $this->ams_maintenance_model->open_jobs_for_staff($staffId);
+        if ($h['assets'] === 0 && $jobs === 0) {
             return $status;
         }
 
-        $message = _l('ams_staff_holds_items', [get_staff_full_name($staffId), $h['assets']]);
+        // Open maintenance jobs only warn: the "block" setting is about held assets.
+        $jobsNote = $jobs ? ' ' . _l('ams_staff_has_mt_jobs', [get_staff_full_name($staffId), $jobs]) : '';
+        if ($h['assets'] === 0) {
+            set_alert('warning', trim($jobsNote));
+
+            return $status;
+        }
+
+        $message = _l('ams_staff_holds_items', [get_staff_full_name($staffId), $h['assets']]) . $jobsNote;
 
         if (get_option('ams_block_staff_deactivation') == '1') {
             set_alert('danger', $message . ' ' . _l('ams_staff_deactivation_blocked'));
@@ -655,6 +665,8 @@ class Ams_people_model extends App_Model
         $this->db->where('staff_id', $from)->delete($this->t('ams_department_approvers'));
         $this->load->model(AMS_MODULE_NAME . '/ams_license_model');
         $this->ams_license_model->transfer_staff_seats($from, $to);
+        $this->load->model(AMS_MODULE_NAME . '/ams_maintenance_model');
+        $this->ams_maintenance_model->transfer_staff($from, $to);
 
         log_activity('AMS: assets of deleted staff #' . $from . ' transferred to staff #' . $to);
     }

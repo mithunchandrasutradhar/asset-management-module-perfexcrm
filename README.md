@@ -99,6 +99,12 @@ Everything lives in the **Assets** menu in the Perfex sidebar.
   - jobs are opened automatically a set number of days before the due date, and the asset managers are notified;
   - the next date counts from when the work was actually done;
   - a cancelled or deleted job moves the schedule on to its next date.
+- **Responsible staff:** each job and schedule can have responsible staff and / or Perfex departments.
+  - Jobs opened by a schedule copy its responsible people; a "not working" check can open a follow-up repair job for the same people.
+  - Responsible staff are notified when assigned, when the job is due and when it is overdue (repeated every N days). Asset managers also get the alerts (setting), and are told once when a job is not acknowledged after N days.
+  - They see their jobs in **My Assets → My Maintenance Jobs** and on the job page can **Acknowledge**, add **progress notes**, **Start** and **Complete** (with "Is the asset working?": working / partly / not working) without the Maintenance *Edit* permission.
+  - The list has a Responsible column, "My jobs", filters (responsible, unassigned, not acknowledged, check result) and bulk **Change responsible**. The Maintenance Cost report can be grouped by responsible.
+  - The reporter of an issue is told who is handling it. Deactivating a responsible staff member warns; deleting one moves their jobs to the "transfer data to" person.
 
 ### Software licences
 
@@ -184,7 +190,7 @@ Everything lives in the **Assets** menu in the Perfex sidebar.
 
 ### Notifications and email
 
-Bell notifications, plus 10 editable email templates in **Setup → Email Templates → Asset Management**:
+Bell notifications, plus 12 editable email templates in **Setup → Email Templates → Asset Management**:
 
 - asset assigned;
 - acceptance declined;
@@ -195,6 +201,8 @@ Bell notifications, plus 10 editable email templates in **Setup → Email Templa
 - HostBill inventory refresh alert;
 - purchase order to supplier;
 - maintenance due;
+- maintenance assigned (to responsible staff);
+- maintenance overdue (to responsible staff);
 - licence expiring.
 
 Email for staff notifications can be switched off globally.
@@ -209,7 +217,7 @@ All permissions are standard Perfex permissions (**Setup → Staff → Roles**):
 |---|---|
 | AMS - Assets | View own (My Assets) / view all / create / edit / delete, **Check out**, **Check in**, **Dispose** |
 | AMS - Asset Requests | Create and view own, view all, **Approve** |
-| AMS - Maintenance | View / create / edit / delete (jobs and schedules) |
+| AMS - Maintenance | View own (jobs I am responsible for) / view all / create / edit / delete (jobs and schedules) |
 | AMS - Software Licences | View own / view all / create / edit / delete, **View licence keys** |
 | AMS - Procurement | View / create / edit / delete, **Approve purchase orders** |
 | AMS - Physical Audits | View / create / edit (scan, complete) / delete |
@@ -254,7 +262,7 @@ The module runs on the Perfex cron (never call anything else):
 | Database upgrade check after a module update | every run |
 | HostBill inventory refresh and alerts | every *N* minutes (setting) |
 | Overdue-return reminders | every 6 hours |
-| Maintenance schedules and licence expiry reminders | every 6 hours |
+| Maintenance schedules, overdue / not-acknowledged maintenance alerts, licence expiry reminders | every 6 hours |
 | Book value (depreciation) refresh | daily |
 
 ---

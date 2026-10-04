@@ -14,6 +14,18 @@ class Ams_reports_model extends App_Model
     public function maintenance_cost($from, $to, $group)
     {
         $p = db_prefix();
+        if ($group === 'responsible') {
+            // A job with several responsible people / departments counts for each of them.
+            return $this->db->query('SELECT IF(ms.staff_id IS NOT NULL, CONCAT(s.firstname, " ", s.lastname), d.name) label, ms.department_id dept,
+                    COUNT(*) jobs, SUM(IFNULL(m.cost, 0)) cost, SUM(IFNULL(m.downtime_hours, 0)) downtime
+                FROM ' . $p . 'ams_maintenance m
+                LEFT JOIN ' . $p . 'ams_maintenance_staff ms ON ms.rel_type = "job" AND ms.rel_id = m.id
+                LEFT JOIN ' . $p . 'staff s ON s.staffid = ms.staff_id
+                LEFT JOIN ' . $p . 'departments d ON d.departmentid = ms.department_id
+                WHERE m.status = "completed" AND m.end_date BETWEEN ? AND ?
+                GROUP BY ms.staff_id, ms.department_id
+                ORDER BY cost DESC', [$from, $to])->result_array();
+        }
         switch ($group) {
             case 'supplier':
                 $label = 'sp.name';

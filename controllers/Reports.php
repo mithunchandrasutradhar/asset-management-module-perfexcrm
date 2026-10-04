@@ -63,7 +63,7 @@ class Reports extends AdminController
         $to    = $this->input->get('to') ? to_sql_date($this->input->get('to')) : date('Y-m-d');
         $from  = preg_match('/^\d{4}-\d{2}-\d{2}$/', (string) $from) ? $from : date('Y-01-01');
         $to    = preg_match('/^\d{4}-\d{2}-\d{2}$/', (string) $to) && $to >= $from ? $to : date('Y-m-d');
-        $group = in_array($this->input->get('group'), ['supplier', 'type', 'asset']) ? $this->input->get('group') : 'category';
+        $group = in_array($this->input->get('group'), ['supplier', 'type', 'asset', 'responsible']) ? $this->input->get('group') : 'category';
 
         $data['title']   = _l('ams_report_maintenance_cost');
         $data['from']    = $from;

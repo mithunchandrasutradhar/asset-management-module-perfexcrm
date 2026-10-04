@@ -127,6 +127,7 @@ class Assets extends AdminController
         $this->load->model(AMS_MODULE_NAME . '/ams_maintenance_model');
         $data['maintenance_cost'] = $this->ams_maintenance_model->asset_total_cost($id);
         $data['mt_types']         = $this->ams_maintenance_model->types();
+        $data['mt_responsible']   = $this->ams_maintenance_model->responsible_options();
         $data['suppliers']        = ams_supplier_options(true);
 
         // Finance tab: depreciation schedule, TCO, disposal record.

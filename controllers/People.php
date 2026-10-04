@@ -41,6 +41,11 @@ class People extends AdminController
         $data['title']    = get_staff_full_name($staffId);
         $data['staff']    = $staff;
         $data['holdings'] = $this->ams_people_model->holdings($staffId);
+        $data['canMt']    = staff_can('view', 'ams_maintenance');
+        if ($data['canMt']) {
+            $this->load->model(AMS_MODULE_NAME . '/ams_maintenance_model');
+            $data['mt_open'] = $this->ams_maintenance_model->open_jobs_for_staff($staffId);
+        }
         $data['depts']    = array_column($this->db->query('SELECT d.name FROM ' . db_prefix() . 'staff_departments sd JOIN ' . db_prefix() . 'departments d ON d.departmentid = sd.departmentid WHERE sd.staffid = ?', [(int) $staffId])->result_array(), 'name');
         $this->load->view(AMS_MODULE_NAME . '/people/staff', $data);
     }

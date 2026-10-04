@@ -253,7 +253,7 @@ if ($a->source === 'gift') {
                                 <a href="#" class="btn btn-primary tw-mb-3" onclick="ams_mt_new(); return false;"><i class="fa-regular fa-plus tw-mr-1"></i><?= _l('ams_mt_new'); ?></a>
                                 <?php } ?>
                                 <?php render_datatable([
-                                    '#', _l('ams_asset'), _l('ams_mt_title'), _l('ams_mt_type'), _l('ams_status'),
+                                    '', '#', _l('ams_asset'), _l('ams_mt_title'), _l('ams_mt_type'), _l('ams_status'), _l('ams_mt_responsible'),
                                     _l('ams_mt_due_date'), _l('ams_mt_start_date'), _l('ams_mt_end_date'), _l('ams_supplier'), _l('ams_mt_cost'),
                                 ], 'ams-asset-maintenance'); ?>
                             </div>
@@ -533,7 +533,7 @@ if ($a->source === 'gift') {
 <?php } ?>
 
 <?php if ($canMt) {
-    $this->load->view(AMS_MODULE_NAME . '/maintenance/_modals', ['assets' => [], 'types' => $mt_types, 'suppliers' => $suppliers, 'request' => null, 'fixed_asset' => $a->id]);
+    $this->load->view(AMS_MODULE_NAME . '/maintenance/_modals', ['assets' => [], 'types' => $mt_types, 'suppliers' => $suppliers, 'request' => null, 'fixed_asset' => $a->id, 'responsible' => $mt_responsible]);
 } ?>
 <?php init_tail(); ?>
 <?php if ($canMt) {
@@ -547,7 +547,7 @@ if ($a->source === 'gift') {
         initDataTable('.table-ams-history', admin_url + 'asset_management/assets/history_table/<?= (int) $a->id; ?>', [], [], {}, [0, 'desc']);
         initDataTable('.table-ams-audit-log', admin_url + 'asset_management/assets/audit_table/<?= (int) $a->id; ?>', [2], [2], {}, [0, 'desc']);
         <?php if ($canMt) { ?>
-        initDataTable('.table-ams-asset-maintenance', admin_url + 'asset_management/maintenance/table/<?= (int) $a->id; ?>', [], [], {}, [0, 'desc']).column(1).visible(false, false);
+        initDataTable('.table-ams-asset-maintenance', admin_url + 'asset_management/maintenance/table/<?= (int) $a->id; ?>', [0, 6], [0, 6], {}, [1, 'desc']).columns([0, 2]).visible(false, false);
         <?php } ?>
         <?php if ($canLic) { ?>
         initDataTable('.table-ams-asset-licenses', admin_url + 'asset_management/licenses/seats_table', [], [], { ams_asset_id: '[name="ams_asset_id"]' }, [2, 'desc']).column(1).visible(false, false);

@@ -527,6 +527,7 @@ function ams_send_email($slug, $staffId, $fields = [])
         '{ams_staff_name}'  => '',
         '{ams_request_no}'  => '',
         '{ams_due_date}'    => '',
+        '{ams_responsible}' => '',
     ], $fields);
 
     // Values are plain text; escape them because the templates are HTML.
@@ -619,7 +620,7 @@ function ams_acceptance_status_badge($status)
 function ams_can_use_my_assets()
 {
     return staff_can('view', 'ams_assets') || staff_can('view_own', 'ams_assets')
-        || staff_can('view_own', 'ams_licenses')
+        || staff_can('view_own', 'ams_licenses') || staff_can('view_own', 'ams_maintenance')
         || staff_can('create', 'ams_requests') || staff_can('view_own', 'ams_requests') || staff_can('view', 'ams_requests');
 }
 
@@ -961,4 +962,10 @@ function ams_can_import()
 function ams_label_code_options()
 {
     return [['id' => 'qr', 'name' => _l('ams_label_code_qr')], ['id' => 'barcode', 'name' => _l('ams_label_code_barcode')]];
+}
+
+/** Maintenance list: every job ("view") or only the jobs the staff member is responsible for ("view own"). */
+function ams_can_see_maintenance()
+{
+    return staff_can('view', 'ams_maintenance') || staff_can('view_own', 'ams_maintenance');
 }

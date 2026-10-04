@@ -29,6 +29,13 @@ class My_assets extends AdminController
             ->where('is_deleted', 0)->order_by('asset_tag')->get(db_prefix() . 'ams_assets')->result_array();
         $data['categories'] = ams_category_options(true);
 
+        // Maintenance jobs I am responsible for (directly or through my department).
+        $this->load->model(AMS_MODULE_NAME . '/ams_maintenance_model');
+        $mine            = Ams_maintenance_model::mine_sql('m.id', $me);
+        $data['my_jobs'] = (array) $this->db->query('SELECT COUNT(*) total, SUM(m.status IN ("scheduled", "in_progress")) open FROM ' . db_prefix() . 'ams_maintenance m WHERE ' . $mine)->row_array();
+        $data['my_jobs'] = ['total' => (int) $data['my_jobs']['total'], 'open' => (int) $data['my_jobs']['open']];
+        $data['mt_modal'] = ['assets' => [], 'types' => $this->ams_maintenance_model->types(), 'suppliers' => ams_supplier_options(true), 'request' => null, 'fixed_asset' => null, 'responsible' => $this->ams_maintenance_model->responsible_options()];
+
         $this->load->view(AMS_MODULE_NAME . '/my_assets/index', $data);
     }
 

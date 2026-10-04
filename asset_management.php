@@ -16,7 +16,7 @@ define('AMS_MODULE_NAME', 'asset_management');
 // re-runs the (idempotent) installer on the next admin page load, so updated
 // module files never run against a stale schema and no manual
 // deactivate/reactivate is needed.
-define('AMS_SCHEMA_VERSION', 10);
+define('AMS_SCHEMA_VERSION', 11);
 
 define('AMS_UPLOAD_PATH', FCPATH . 'uploads/asset_management/');
 
@@ -139,7 +139,7 @@ function ams_register_permissions()
 
 
     register_staff_capabilities('ams_maintenance', [
-        'capabilities' => ['view' => $view, 'create' => $create, 'edit' => $edit, 'delete' => $delete],
+        'capabilities' => ['view_own' => _l('ams_perm_mt_view_own'), 'view' => $view, 'create' => $create, 'edit' => $edit, 'delete' => $delete],
     ], _l('ams_perm_maintenance'));
 
     register_staff_capabilities('ams_licenses', [
@@ -230,7 +230,7 @@ function ams_init_menu_items()
         [ams_can_see_requests_page(), 'ams-requests', 'ams_requests', 'asset_management/requests'],
         [staff_can('view', 'ams_audits'), 'ams-audits', 'ams_audits', 'asset_management/audits'],
         // Operations
-        [staff_can('view', 'ams_maintenance'), 'ams-maintenance', 'ams_maintenance', 'asset_management/maintenance'],
+        [ams_can_see_maintenance(), 'ams-maintenance', 'ams_maintenance', 'asset_management/maintenance'],
         [staff_can('view', 'ams_licenses'), 'ams-licenses', 'ams_licenses', 'asset_management/licenses'],
         [staff_can('view', 'ams_procurement'), 'ams-procurement', 'ams_purchase_orders', 'asset_management/procurement'],
         [$canAssetsAll, 'ams-purchases', 'ams_menu_purchases', 'asset_management/purchases'],
@@ -459,6 +459,7 @@ function ams_cron_maintenance_and_licenses()
     $CI->load->model(AMS_MODULE_NAME . '/ams_maintenance_model');
     $CI->load->model(AMS_MODULE_NAME . '/ams_license_model');
     $CI->ams_maintenance_model->process_due_schedules();
+    $CI->ams_maintenance_model->process_followups();
     $CI->ams_license_model->send_expiry_reminders();
 }
 

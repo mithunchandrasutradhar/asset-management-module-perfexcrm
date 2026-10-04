@@ -19,6 +19,8 @@ $tables = [
     'ams_purchase_orders',
     'ams_license_seats',
     'ams_licenses',
+    'ams_maintenance_notes',
+    'ams_maintenance_staff',
     'ams_maintenance_schedules',
     'ams_maintenance',
     'ams_department_approvers',

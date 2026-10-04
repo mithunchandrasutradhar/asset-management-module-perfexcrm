@@ -5,7 +5,8 @@ $canAssets   = staff_can('view', 'ams_assets') || staff_can('view_own', 'ams_ass
 $canRequests = staff_can('create', 'ams_requests') || staff_can('view_own', 'ams_requests') || staff_can('view', 'ams_requests');
 $canCreate   = staff_can('create', 'ams_requests');
 $canLic      = staff_can('view', 'ams_licenses') || staff_can('view_own', 'ams_licenses');
-$firstTab    = $holdings['acceptances'] ? 'acceptances' : ($canAssets ? 'assets' : 'requests');
+$canJobs     = $my_jobs['total'] > 0;
+$firstTab    = $holdings['acceptances'] ? 'acceptances' : ($canAssets ? 'assets' : ($canJobs ? 'jobs' : 'requests'));
 ?>
 <div id="wrapper">
     <div class="content">
@@ -37,6 +38,9 @@ $firstTab    = $holdings['acceptances'] ? 'acceptances' : ($canAssets ? 'assets'
                             <li><a href="#tab_licenses" data-toggle="tab"><?= _l('ams_licenses'); ?></a></li>
                             <?php } ?>
                             <li class="<?= $firstTab === 'acceptances' ? 'active' : ''; ?>"><a href="#tab_acceptances" data-toggle="tab"><?= _l('ams_acceptances'); ?> <?php if ($holdings['acceptances']) { ?><span class="badge bg-warning"><?= (int) $holdings['acceptances']; ?></span><?php } ?></a></li>
+                            <?php if ($canJobs) { ?>
+                            <li class="<?= $firstTab === 'jobs' ? 'active' : ''; ?>"><a href="#tab_jobs" data-toggle="tab"><?= _l('ams_mt_my_maintenance_jobs'); ?> <?php if ($my_jobs['open']) { ?><span class="badge bg-info"><?= (int) $my_jobs['open']; ?></span><?php } ?></a></li>
+                            <?php } ?>
                             <?php if ($canRequests) { ?>
                             <li class="<?= $firstTab === 'requests' ? 'active' : ''; ?>"><a href="#tab_requests" data-toggle="tab"><?= _l('ams_my_requests'); ?></a></li>
                             <?php } ?>
@@ -60,6 +64,14 @@ $firstTab    = $holdings['acceptances'] ? 'acceptances' : ($canAssets ? 'assets'
                                     _l('ams_date'), _l('ams_asset'), _l('ams_status'), _l('ams_responded'), _l('ams_signed_name'), _l('ams_assigned_by'),
                                 ], 'ams-my-acceptances'); ?>
                             </div>
+                            <?php if ($canJobs) { ?>
+                            <div class="tab-pane <?= $firstTab === 'jobs' ? 'active' : ''; ?>" id="tab_jobs">
+                                <?php render_datatable([
+                                    '', '#', _l('ams_asset'), _l('ams_mt_title'), _l('ams_mt_type'), _l('ams_status'), _l('ams_mt_responsible'),
+                                    _l('ams_mt_due_date'), _l('ams_mt_start_date'), _l('ams_mt_end_date'), _l('ams_supplier'), _l('ams_mt_cost'),
+                                ], 'ams-my-maintenance'); ?>
+                            </div>
+                            <?php } ?>
                             <?php if ($canRequests) { ?>
                             <div class="tab-pane <?= $firstTab === 'requests' ? 'active' : ''; ?>" id="tab_requests">
                                 <?php render_datatable([
@@ -174,7 +186,13 @@ $firstTab    = $holdings['acceptances'] ? 'acceptances' : ($canAssets ? 'assets'
 </div>
 <?php } ?>
 
+<?php if ($canJobs) {
+    $this->load->view(AMS_MODULE_NAME . '/maintenance/_modals', $mt_modal);
+} ?>
 <?php init_tail(); ?>
+<?php if ($canJobs) {
+    $this->load->view(AMS_MODULE_NAME . '/maintenance/_js');
+} ?>
 <script src="<?= base_url('assets/plugins/signature-pad/signature_pad.min.js'); ?>"></script>
 <script>
     var ams_sig = null, ams_acc_id = null;
@@ -188,6 +206,9 @@ $firstTab    = $holdings['acceptances'] ? 'acceptances' : ($canAssets ? 'assets'
         initDataTable('.table-ams-my-acceptances', admin_url + 'asset_management/my_assets/acceptances_table', [], [], {}, [0, 'desc']);
         <?php if ($canLic) { ?>
         initDataTable('.table-ams-my-licenses', admin_url + 'asset_management/licenses/my_seats_table', [], [], {}, [2, 'desc']).column(1).visible(false, false);
+        <?php } ?>
+        <?php if ($canJobs) { ?>
+        initDataTable('.table-ams-my-maintenance', admin_url + 'asset_management/maintenance/staff_table', [0, 6], [0, 6], {}, [7, 'asc']).columns([0, 1]).visible(false, false);
         <?php } ?>
         <?php if ($canRequests) { ?>
         initDataTable('.table-ams-my-requests', admin_url + 'asset_management/my_assets/requests_table', [], [], {}, [1, 'desc']);

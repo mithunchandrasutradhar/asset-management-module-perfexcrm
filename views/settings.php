@@ -57,8 +57,14 @@
 <h4 class="tw-font-semibold tw-text-lg"><?= _l('ams_settings_mt_lic_po'); ?></h4>
 <div class="row">
     <div class="col-md-3"><?= render_input('settings[ams_maintenance_lead_days]', 'ams_setting_mt_lead_days', get_option('ams_maintenance_lead_days'), 'number', ['min' => 0]); ?></div>
+    <div class="col-md-3"><?= render_input('settings[ams_mt_overdue_days]', ams_label_help('ams_setting_mt_overdue_days', _l('ams_setting_mt_overdue_days_help')), get_option('ams_mt_overdue_days'), 'number', ['min' => 1]); ?></div>
+    <div class="col-md-3"><?= render_input('settings[ams_mt_ack_days]', ams_label_help('ams_setting_mt_ack_days', _l('ams_setting_mt_ack_days_help')), get_option('ams_mt_ack_days'), 'number', ['min' => 0]); ?></div>
     <div class="col-md-3"><?= render_input('settings[ams_license_reminder_days]', 'ams_setting_lic_days', get_option('ams_license_reminder_days'), 'number', ['min' => 1]); ?></div>
     <div class="col-md-3"><?= render_input('settings[ams_po_prefix]', 'ams_setting_po_prefix', get_option('ams_po_prefix')); ?></div>
+</div>
+<div class="row">
+    <div class="col-md-6"><?php ams_yes_no_option('ams_mt_responsible_required', 'ams_setting_mt_required', 'ams_setting_mt_required_help'); ?></div>
+    <div class="col-md-6"><?php ams_yes_no_option('ams_mt_notify_managers', 'ams_setting_mt_notify_managers', 'ams_setting_mt_notify_managers_help'); ?></div>
 </div>
 <?php ams_yes_no_option('ams_po_require_approval', 'ams_setting_po_approval', 'ams_setting_po_approval_help'); ?>
 <?= render_textarea('settings[ams_po_terms]', 'ams_setting_po_terms', get_option('ams_po_terms'), ['rows' => 3]); ?>

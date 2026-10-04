@@ -42,6 +42,15 @@ foreach ($stats['value'] as $v) {
             $ops[] = $tile(_l('ams_mt_open'), total_rows($p . 'ams_maintenance', 'status IN ("scheduled","in_progress")'), 'fa-solid fa-screwdriver-wrench', admin_url('asset_management/maintenance'));
             $ops[] = $tile(_l('ams_mt_overdue'), '<span class="text-danger">' . total_rows($p . 'ams_maintenance', 'status IN ("scheduled","in_progress") AND due_date < CURDATE()') . '</span>', 'fa-solid fa-clock', admin_url('asset_management/maintenance'));
         }
+        if (ams_can_see_maintenance()) {
+            get_instance()->load->model(AMS_MODULE_NAME . '/ams_maintenance_model');
+            // Plain query: total_rows() would protect identifiers inside the subquery.
+            $myMt  = $this->db->query('SELECT COUNT(*) open, IFNULL(SUM(m.due_date < CURDATE()), 0) late FROM ' . $p . 'ams_maintenance m
+                WHERE m.status IN ("scheduled", "in_progress") AND ' . Ams_maintenance_model::mine_sql('m.id', get_staff_user_id()))->row();
+            $ops[] = $tile(_l('ams_mt_my_open'), (int) $myMt->open
+                . ' <span class="tw-text-neutral-400 tw-text-lg">/ <span class="text-danger">' . (int) $myMt->late . '</span></span>',
+                'fa-solid fa-user-gear', admin_url('asset_management/maintenance?mine=1'));
+        }
         if (staff_can('view', 'ams_licenses')) {
             $ops[] = $tile(_l('ams_lic_expiring_soon'), '<span class="text-warning">' . total_rows($p . 'ams_licenses', 'active = 1 AND expiry_date IS NOT NULL AND expiry_date <= DATE_ADD(CURDATE(), INTERVAL ' . (int) get_option('ams_license_reminder_days') . ' DAY)') . '</span>', 'fa-solid fa-key', admin_url('asset_management/licenses'));
         }

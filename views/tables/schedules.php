@@ -17,6 +17,7 @@ return App_table::find('ams_schedules')
             $t . '.next_due as next_due',
             $t . '.last_done as last_done',
             'sp.name as supplier_name',
+            '1',
             $t . '.active as active',
         ];
 
@@ -35,6 +36,9 @@ return App_table::find('ams_schedules')
         $canEdit = staff_can('edit', 'ams_maintenance');
         $canDel  = staff_can('delete', 'ams_maintenance');
         $today   = date('Y-m-d');
+        $CI      = &get_instance();
+        $CI->load->model(AMS_MODULE_NAME . '/ams_maintenance_model');
+        $people  = $CI->ams_maintenance_model->responsible_map('schedule', array_column($result['rResult'], 'id'));
 
         foreach ($result['rResult'] as $aRow) {
             $opts = [];
@@ -53,6 +57,7 @@ return App_table::find('ams_schedules')
             $row[] = '<span class="' . ($aRow['next_due'] < $today ? 'text-danger tw-font-semibold' : '') . '">' . e(_d($aRow['next_due'])) . '</span>';
             $row[] = e(_d($aRow['last_done']));
             $row[] = e($aRow['supplier_name']);
+            $row[] = ($people[(int) $aRow['id']] ?? []) ? e($CI->ams_maintenance_model->responsible_label($people[(int) $aRow['id']])) : '<span class="label label-default">' . _l('ams_mt_unassigned') . '</span>';
             $row[] = $aRow['active'] ? '<span class="label label-success">' . _l('ams_active') . '</span>' : '<span class="label label-default">' . _l('ams_inactive') . '</span>';
 
             $row['DT_RowClass'] = 'has-row-options';

@@ -1,8 +1,11 @@
 <?php defined('BASEPATH') or exit('No direct script access allowed'); ?>
 <?php
-// Shared maintenance modals (maintenance list page and asset profile tab).
+// Shared maintenance modals (maintenance list, job page, asset profile tab, My Assets).
 // $fixed_asset: asset id when opened from an asset page (asset select hidden).
-$request = $request ?? null;
+// $responsible: responsible_options() for the job form.
+$request     = $request ?? null;
+$fixed_asset = $fixed_asset ?? null;
+$assets      = $assets ?? [];
 ?>
 <?php if (staff_can('create', 'ams_maintenance') || staff_can('edit', 'ams_maintenance')) { ?>
 <div class="modal fade" id="ams_mt_modal" tabindex="-1" role="dialog">
@@ -28,6 +31,7 @@ $request = $request ?? null;
                     <div class="col-md-6"><?= render_select('type', $types, ['id', 'name'], 'ams_mt_type', 'repair', [], [], '', '', false); ?></div>
                     <div class="col-md-6"><?= render_date_input('due_date', 'ams_mt_due_date'); ?></div>
                 </div>
+                <?php $this->load->view(AMS_MODULE_NAME . '/maintenance/_responsible_select', ['options' => $responsible, 'selected' => [], 'select_id' => 'ams_mt_responsible']); ?>
                 <?= render_select('supplier_id', $suppliers, ['id', 'name'], 'ams_mt_vendor'); ?>
                 <?= render_textarea('notes', 'ams_notes', $request ? (string) $request->description : ''); ?>
                 <div class="ams-mt-new-only">
@@ -51,7 +55,7 @@ $request = $request ?? null;
 </div>
 <?php } ?>
 
-<?php if (staff_can('edit', 'ams_maintenance')) { ?>
+<?php // Start / complete: editors and the responsible staff (checked on the server per job). ?>
 <div class="modal fade" id="ams_mt_start_modal" tabindex="-1" role="dialog">
     <div class="modal-dialog modal-sm" role="document">
         <?= form_open('', ['class' => 'ams-mt-action-form']); ?>
@@ -88,6 +92,27 @@ $request = $request ?? null;
                     <div class="col-md-6"><?= render_date_input('end_date', 'ams_mt_end_date', _d(date('Y-m-d'))); ?></div>
                     <div class="col-md-6"><?= render_input('cost', _l('ams_mt_cost') . ' (' . e(get_base_currency()->name) . ')', '', 'number', ['step' => '0.01', 'min' => '0']); ?></div>
                     <div class="col-md-6"><?= render_input('downtime_hours', 'ams_mt_downtime', '', 'number', ['step' => '0.5', 'min' => '0']); ?></div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="ams_mt_check_result" class="control-label"><span class="ams-mt-check-req req text-danger hide">* </span><?= _l('ams_mt_check_result') . ams_help_icon(_l('ams_mt_check_result_help')); ?></label>
+                            <select name="check_result" id="ams_mt_check_result" class="selectpicker" data-width="100%" data-none-selected-text="<?= e(_l('dropdown_non_selected_tex')); ?>">
+                                <option value=""></option>
+                                <?php foreach (['working', 'partial', 'not_working'] as $c) { ?>
+                                <option value="<?= $c; ?>"><?= _l('ams_mt_check_' . $c); ?></option>
+                                <?php } ?>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="ams-mt-not-working hide alert alert-warning tw-mb-3">
+                    <div class="checkbox checkbox-primary tw-mt-0">
+                        <input type="checkbox" name="set_damaged" id="ams_mt_set_damaged" value="1" checked>
+                        <label for="ams_mt_set_damaged"><?= _l('ams_mt_set_damaged'); ?></label>
+                    </div>
+                    <div class="checkbox checkbox-primary tw-mb-0">
+                        <input type="checkbox" name="create_followup" id="ams_mt_create_followup" value="1" checked>
+                        <label for="ams_mt_create_followup"><?= _l('ams_mt_create_followup') . ams_help_icon(_l('ams_mt_create_followup_help')); ?></label>
+                    </div>
                 </div>
                 <?= render_textarea('resolution', 'ams_mt_resolution'); ?>
             </div>
@@ -98,4 +123,3 @@ $request = $request ?? null;
         <?= form_close(); ?>
     </div>
 </div>
-<?php } ?>

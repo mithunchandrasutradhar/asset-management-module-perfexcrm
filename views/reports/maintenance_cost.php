@@ -4,7 +4,7 @@
 $base   = get_base_currency();
 $total  = array_sum(array_column($summary, 'cost'));
 $jobs   = array_sum(array_column($summary, 'jobs'));
-$label  = fn ($s) => $group === 'type' ? _l('ams_mt_type_' . $s['label']) : ($s['label'] ?? _l('ams_none'));
+$label  = fn ($s) => $group === 'type' ? _l('ams_mt_type_' . $s['label']) : ($group === 'responsible' ? ($s['label'] === null ? _l('ams_mt_unassigned') : ($s['dept'] ? _l('ams_mt_department_label', $s['label']) : $s['label'])) : ($s['label'] ?? _l('ams_none')));
 $chart  = [
     'labels'   => array_map(fn ($m) => date('M Y', strtotime($m['ym'] . '-01')), $monthly),
     'datasets' => [[
@@ -25,7 +25,7 @@ $chart  = [
                 <div class="form-group">
                     <label class="control-label"><?= _l('ams_group_by'); ?></label>
                     <select name="group" class="form-control">
-                        <?php foreach (['category' => 'ams_category', 'supplier' => 'ams_supplier', 'type' => 'ams_mt_type', 'asset' => 'ams_asset'] as $g => $l) { ?>
+                        <?php foreach (['category' => 'ams_category', 'supplier' => 'ams_supplier', 'type' => 'ams_mt_type', 'asset' => 'ams_asset', 'responsible' => 'ams_mt_responsible'] as $g => $l) { ?>
                         <option value="<?= $g; ?>" <?= $group === $g ? 'selected' : ''; ?>><?= _l($l); ?></option>
                         <?php } ?>
                     </select>
@@ -57,7 +57,7 @@ $chart  = [
                 <div class="table-responsive">
                     <table class="table table-striped tw-mb-0">
                         <thead><tr>
-                            <th><?= _l(['category' => 'ams_category', 'supplier' => 'ams_supplier', 'type' => 'ams_mt_type', 'asset' => 'ams_asset'][$group]); ?></th>
+                            <th><?= _l(['category' => 'ams_category', 'supplier' => 'ams_supplier', 'type' => 'ams_mt_type', 'asset' => 'ams_asset', 'responsible' => 'ams_mt_responsible'][$group]) . ($group === 'responsible' ? ams_help_icon(_l('ams_mt_report_responsible_note')) : ''); ?></th>
                             <th class="text-right"><?= _l('ams_report_jobs'); ?></th>
                             <th class="text-right"><?= _l('ams_mt_downtime'); ?></th>
                             <th class="text-right"><?= _l('ams_mt_cost'); ?></th>

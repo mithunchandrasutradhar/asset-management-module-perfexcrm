@@ -22,7 +22,7 @@
                 <div class="panel_s">
                     <div class="panel-body panel-table-full">
                         <?php render_datatable([
-                            _l('ams_asset'), _l('ams_mt_title'), _l('ams_mt_type'), _l('ams_mt_interval'), _l('ams_mt_next_due'), _l('ams_mt_last_done'), _l('ams_mt_vendor'), _l('ams_active'),
+                            _l('ams_asset'), _l('ams_mt_title'), _l('ams_mt_type'), _l('ams_mt_interval'), _l('ams_mt_next_due'), _l('ams_mt_last_done'), _l('ams_mt_vendor'), _l('ams_mt_responsible'), _l('ams_active'),
                         ], 'ams-schedules'); ?>
                     </div>
                 </div>
@@ -54,6 +54,7 @@
                     <div class="col-md-6"><?= render_select('type', $types, ['id', 'name'], 'ams_mt_type', 'preventive', [], [], '', '', false); ?></div>
                     <div class="col-md-6"><?= render_select('supplier_id', $suppliers, ['id', 'name'], 'ams_mt_vendor'); ?></div>
                 </div>
+                <?php $this->load->view(AMS_MODULE_NAME . '/maintenance/_responsible_select', ['options' => $responsible, 'selected' => [], 'select_id' => 'ams_sch_responsible']); ?>
                 <div class="checkbox checkbox-primary">
                     <input type="checkbox" name="active" id="sch_active" value="1" checked>
                     <label for="sch_active"><?= _l('ams_active'); ?></label>
@@ -71,7 +72,7 @@
 <?php init_tail(); ?>
 <script>
     $(function() {
-        initDataTable('.table-ams-schedules', admin_url + 'asset_management/maintenance/schedules_table', [], [], {}, [4, 'asc']);
+        initDataTable('.table-ams-schedules', admin_url + 'asset_management/maintenance/schedules_table', [7], [7], {}, [4, 'asc']);
         $('#ams-sch-form').on('submit', function(e) {
             e.preventDefault();
             $.post(this.action, $(this).serialize()).done(function(r) {
@@ -86,6 +87,7 @@
         f[0].reset();
         f.find('select.selectpicker').selectpicker('refresh');
         f.find('[name="id"]').val('');
+        f.find('#ams_sch_responsible').selectpicker('val', []);
         f.find('.ams-sch-assets').removeClass('hide');
         $('#ams_sch_modal').modal('show');
     }
@@ -103,6 +105,7 @@
             f.find('[name="type"]').selectpicker('val', s.type);
             f.find('[name="supplier_id"]').selectpicker('val', s.supplier_id || '');
             f.find('[name="active"]').prop('checked', s.active == 1);
+            f.find('#ams_sch_responsible').selectpicker('val', s.responsible || []);
             $('#ams_sch_modal').modal('show');
         });
     }
