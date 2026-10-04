@@ -25,19 +25,6 @@
         <?= render_input('settings[ams_max_upload_mb]', 'ams_setting_max_upload', get_option('ams_max_upload_mb'), 'number', ['min' => 1]); ?>
     </div>
 </div>
-<hr class="hr-panel-separator" />
-<h4 class="tw-font-semibold tw-text-lg"><?= _l('ams_settings_inventory'); ?></h4>
-<div class="row">
-    <div class="col-md-4">
-        <?= render_input('settings[ams_item_sku_prefix]', 'ams_setting_sku_prefix', get_option('ams_item_sku_prefix')); ?>
-    </div>
-    <div class="col-md-8">
-        <input type="hidden" name="settings[ams_low_stock_notify_staff][]" value="">
-        <?= render_select('settings[ams_low_stock_notify_staff][]', array_map(fn ($s) => ['id' => $s['staffid'], 'name' => $s['firstname'] . ' ' . $s['lastname']], ams_staff_options()), ['id', 'name'], ams_label_help('ams_setting_notify_staff', _l('ams_setting_notify_staff_help')), ams_low_stock_recipients(), ['multiple' => true, 'data-actions-box' => true], [], '', '', false); ?>
-    </div>
-</div>
-<?php ams_yes_no_option('ams_block_negative_stock', 'ams_setting_block_negative', 'ams_setting_block_negative_help'); ?>
-<?php ams_yes_no_option('ams_item_sellable_enabled', 'ams_setting_sellable_enabled', 'ams_setting_sellable_enabled_help'); ?>
 
 <hr class="hr-panel-separator" />
 <h4 class="tw-font-semibold tw-text-lg"><?= _l('ams_settings_people'); ?></h4>

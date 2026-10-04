@@ -237,7 +237,7 @@ class Ams_hostbill_model extends App_Model
             if (get_option('ams_hb_alert_email') == '1') {
                 ams_send_email('ams-low-stock', $staffId, [
                     '{ams_item}'    => 'HostBill: ' . $label,
-                    '{ams_status}'  => _l($state === 'out' ? 'ams_stock_state_out' : 'ams_stock_state_low'),
+                    '{ams_status}'  => _l($state === 'out' ? 'ams_hb_state_out' : 'ams_hb_state_low'),
                     '{ams_details}' => $qty . ' (' . _l('ams_hb_low_level') . ': ' . ams_qty($this->level_for($row)) . ')',
                     '{ams_link}'    => admin_url($link),
                 ]);
@@ -245,12 +245,9 @@ class Ams_hostbill_model extends App_Model
         }
     }
 
-    /** Staff who get HostBill alerts: the HostBill list, or the same staff as Perfex stock alerts. */
+    /** Staff who get HostBill alerts (HostBill Settings → Alerts). */
     public function recipients()
     {
-        if (get_option('ams_hb_alert_recipients') === 'stock') {
-            return ams_low_stock_recipients();
-        }
         $ids = json_decode((string) get_option('ams_hb_alert_staff'), true);
 
         return is_array($ids) ? array_values(array_filter(array_map('intval', $ids))) : [];

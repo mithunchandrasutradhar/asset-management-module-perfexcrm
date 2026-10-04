@@ -53,7 +53,7 @@ class Procurement extends AdminController
         // New PO from an approved asset request: pre-fill one line.
         $data['request'] = null;
         if (! $po && ($reqId = (int) $this->input->get('request_id'))) {
-            $data['request'] = $this->db->where('id', $reqId)->where_in('type', ['asset', 'accessory', 'consumable'])->get(db_prefix() . 'ams_requests')->row();
+            $data['request'] = $this->db->where('id', $reqId)->where('type', 'asset')->get(db_prefix() . 'ams_requests')->row();
         }
 
         $data['title']      = $po ? _l('ams_edit_record', _l('ams_purchase_order')) . ' ' . $po->po_number : _l('ams_new_record', _l('ams_purchase_order'));
@@ -63,7 +63,6 @@ class Procurement extends AdminController
         $data['categories'] = ams_category_options(true);
         $data['brands']     = ams_brand_options(true);
         $data['models']     = ams_model_options(true);
-        $data['items']      = $this->db->select('id, CONCAT(sku, " - ", name) name, cost', false)->where('active', 1)->order_by('name')->get(db_prefix() . 'ams_items')->result_array();
         $this->load->view(AMS_MODULE_NAME . '/procurement/po', $data);
     }
 

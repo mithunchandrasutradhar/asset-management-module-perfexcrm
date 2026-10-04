@@ -3,13 +3,13 @@
 defined('BASEPATH') or exit('No direct script access allowed');
 
 /**
- * CSV / Excel import of assets, stock items and suppliers.
+ * CSV / Excel import of assets and suppliers.
  *
  * run() is used twice with the same mapping: first as a preview (validation
  * only, nothing written), then for real. Every row goes through the same model
- * methods as the screens (Ams_assets_model::add/update, save_item, setup save),
+ * methods as the screens (Ams_assets_model::add/update, setup save),
  * so the same rules, history, audit log and hooks apply. Existing records are
- * matched by asset tag / SKU / supplier name and either skipped or updated.
+ * matched by asset tag / supplier name and either skipped or updated.
  */
 class Ams_import_model extends App_Model
 {
@@ -24,12 +24,6 @@ class Ams_import_model extends App_Model
         $types = [];
         if (staff_can('create', 'ams_assets') || staff_can('edit', 'ams_assets')) {
             $types['assets'] = 'ams_assets';
-        }
-        foreach (array_keys(ams_item_kinds()) as $kind) {
-            if (ams_item_can('create', $kind) || ams_item_can('edit', $kind)) {
-                $types['items'] = 'ams_import_type_items';
-                break;
-            }
         }
         if (staff_can('create', 'ams_setup') || staff_can('edit', 'ams_setup')) {
             $types['suppliers'] = 'ams_suppliers';
@@ -72,26 +66,6 @@ class Ams_import_model extends App_Model
                     'salvage_value'       => $f('ams_dep_salvage_value', false, ['salvage', 'salvage value', 'residual value']),
                     'notes'               => $f('ams_notes', false, ['notes', 'note', 'remarks', 'comment', 'comments']),
                 ];
-            case 'items':
-                return [
-                    'sku'              => $f('ams_sku', false, ['sku', 'code', 'item code', 'product code']),
-                    'name'             => $f('ams_item_name', true, ['name', 'item', 'item name', 'product', 'product name']),
-                    'kind'             => $f('ams_item_kind', false, ['kind', 'type', 'item type']),
-                    'category'         => $f('ams_category', false, ['category']),
-                    'brand'            => $f('ams_brand', false, ['brand', 'make', 'manufacturer']),
-                    'model_no'         => $f('ams_model', false, ['model', 'model no', 'model number']),
-                    'unit'             => $f('ams_unit', false, ['unit', 'uom']),
-                    'cost'             => $f('ams_unit_cost', false, ['cost', 'unit cost', 'purchase price', 'buy price']),
-                    'sale_price'       => $f('ams_sale_price', false, ['sale price', 'price', 'selling price']),
-                    'reorder_level'    => $f('ams_reorder_level', false, ['reorder level', 'min stock', 'minimum']),
-                    'reorder_qty'      => $f('ams_reorder_qty', false, ['reorder qty', 'reorder quantity']),
-                    'default_location' => $f('ams_default_location', false, ['default location']),
-                    'opening_qty'      => $f('ams_opening_stock', false, ['qty', 'quantity', 'opening qty', 'opening stock', 'stock', 'on hand']),
-                    'opening_location' => $f('ams_import_opening_location', false, ['location', 'store', 'warehouse', 'opening location']),
-                    'description'      => $f('ams_description', false, ['description', 'details']),
-                ] + (get_option('ams_item_sellable_enabled') == '1' ? [
-                    'is_sellable'      => $f('ams_is_sellable', false, ['sellable', 'is sellable', 'for sale']),
-                ] : []);
             case 'suppliers':
                 return [
                     'name'           => $f('ams_name', true, ['name', 'supplier', 'supplier name', 'vendor', 'company']),
@@ -132,14 +106,14 @@ class Ams_import_model extends App_Model
     /**
      * @param array $rows    data rows (header removed)
      * @param array $map     field => column index
-     * @param array $options mode (skip|update), date_format, create_missing, default_kind, notify
+     * @param array $options mode (skip|update), date_format, create_missing, notify
      * @return array results [[row, status (create|update|unchanged|skip|error), ref, message]], counts
      */
     public function run($type, array $rows, array $map, array $options, $commit)
     {
         @set_time_limit(600);
         $this->dryRun  = ! $commit;
-        $this->options = $options + ['mode' => 'skip', 'date_format' => 'Y-m-d', 'create_missing' => 0, 'default_kind' => 'stock', 'notify' => 0];
+        $this->options = $options + ['mode' => 'skip', 'date_format' => 'Y-m-d', 'create_missing' => 0, 'notify' => 0];
         $this->cache   = [];
 
         $results = [];
@@ -153,9 +127,6 @@ class Ams_import_model extends App_Model
                 switch ($type) {
                     case 'assets':
                         $r = $this->asset_row($val, $seen);
-                        break;
-                    case 'items':
-                        $r = $this->item_row($val, $seen);
                         break;
                     case 'suppliers':
                         $r = $this->supplier_row($val, $seen);
@@ -341,112 +312,6 @@ class Ams_import_model extends App_Model
         $status   = $existing ? ($r['message'] === _l('ams_no_changes') ? 'unchanged' : 'update') : 'create';
 
         return [$status, $savedTag, trim(implode(' ', $notes) . ($existing ? '' : ' ' . ($r['message'] !== _l('added_successfully', _l('ams_asset')) ? $r['message'] : '')))];
-    }
-
-    // ─── Stock items ──────────────────────────────────────────────────────
-
-    private function item_row($val, &$seen)
-    {
-        $this->load->model(AMS_MODULE_NAME . '/ams_inventory_model');
-        $notes = [];
-
-        $sku = strtoupper((string) $val('sku'));
-        if ($sku !== '') {
-            if (isset($seen[$sku])) {
-                return ['error', $sku, _l('ams_import_duplicate_in_file', $sku)];
-            }
-            $seen[$sku] = $sku;
-        }
-        $existing = $sku !== '' ? $this->db->where('sku', $sku)->get(db_prefix() . 'ams_items')->row_array() : null;
-        if ($existing && $this->options['mode'] !== 'update') {
-            return ['skip', $sku, _l('ams_import_exists_skipped')];
-        }
-
-        $kind = $existing['kind'] ?? null;
-        if (! $kind) {
-            $v    = (string) $val('kind');
-            $kind = $v !== '' ? $this->option_value(ams_item_kind_options(), $v) : $this->options['default_kind'];
-            if (! $kind || ! isset(ams_item_kinds()[$kind])) {
-                return ['error', $sku, _l('ams_import_invalid_value', [_l('ams_item_kind'), $v])];
-            }
-        }
-        if (! ams_item_can($existing ? 'edit' : 'create', $kind)) {
-            return ['error', $sku, _l('access_denied')];
-        }
-
-        $input = $existing ?: ['kind' => $kind, 'active' => 1, 'unit' => 'pcs'];
-        foreach (['name', 'model_no', 'unit', 'description'] as $f) {
-            if ($val($f) !== null && ($val($f) !== '' || ! $existing)) {
-                $input[$f] = $val($f);
-            }
-        }
-        $input['sku'] = $sku !== '' ? $sku : ($existing['sku'] ?? '');
-
-        foreach (['category' => ['categories', 'category_id'], 'brand' => ['brands', 'brand_id'], 'default_location' => ['locations', 'default_location_id']] as $col => [$entity, $field]) {
-            if (($v = $val($col)) === null || $v === '') {
-                continue;
-            }
-            $id = $this->lookup($entity, $v, $notes);
-            if ($id === null) {
-                return ['error', $sku, _l('ams_import_not_found', [_l($this->entity_label($entity)), $v])];
-            }
-            $input[$field] = $id;
-        }
-        foreach (['cost', 'sale_price', 'reorder_level', 'reorder_qty', 'opening_qty'] as $f) {
-            if (($v = $val($f)) !== null && $v !== '') {
-                $n = $this->parse_number($v);
-                if ($n === null || $n < 0) {
-                    return ['error', $sku, _l('ams_import_invalid_number', [$f, $v])];
-                }
-                $input[$f] = $n;
-            }
-        }
-        if (($v = $val('is_sellable')) !== null && $v !== '') {
-            $input['is_sellable'] = $this->parse_bool($v) ? 1 : 0;
-        }
-
-        if ($existing) {
-            unset($input['opening_qty']);
-            if ((float) ($val('opening_qty') ?? 0) > 0) {
-                $notes[] = _l('ams_import_qty_ignored');
-            }
-        } elseif (! empty($input['opening_qty'])) {
-            $loc = (string) $val('opening_location');
-            if ($loc !== '') {
-                $id = $this->lookup('locations', $loc, $notes);
-                if ($id === null) {
-                    return ['error', $sku, _l('ams_import_not_found', [_l('ams_location'), $loc])];
-                }
-                $input['opening_location_id'] = $id;
-            }
-            if (empty($input['opening_location_id']) && empty($input['default_location_id'])) {
-                return ['error', $sku, _l('ams_field_required', _l('ams_import_opening_location'))];
-            }
-        }
-
-        if (trim((string) ($input['name'] ?? '')) === '') {
-            return ['error', $sku, _l('ams_field_required', _l('ams_item_name'))];
-        }
-        if ($sku !== '' && ! $existing && total_rows(db_prefix() . 'ams_items', ['sku' => $sku]) > 0) {
-            return ['error', $sku, _l('ams_sku_exists', e($sku))];
-        }
-
-        $label = $sku !== '' ? $sku : $input['name'];
-        if ($this->dryRun) {
-            return [$existing ? 'update' : 'create', $label, implode(' ', $notes)];
-        }
-
-        // Same switch as assets: without "notify", opening stock at / below the reorder level
-        // does not send one low-stock alert per imported row.
-        $GLOBALS['ams_import_silent'] = empty($this->options['notify']);
-        $r = $this->ams_inventory_model->save_item($input, $existing['id'] ?? null);
-        unset($GLOBALS['ams_import_silent']);
-        if (! $r['success']) {
-            return ['error', $label, $r['message']];
-        }
-        $saved = $this->db->select('sku')->where('id', (int) $r['id'])->get(db_prefix() . 'ams_items')->row()->sku ?? $label;
-
-        return [$existing ? ($r['message'] === _l('ams_no_changes') ? 'unchanged' : 'update') : 'create', $saved, implode(' ', $notes)];
     }
 
     // ─── Suppliers ────────────────────────────────────────────────────────

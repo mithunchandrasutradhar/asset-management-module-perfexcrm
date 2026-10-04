@@ -35,17 +35,6 @@ foreach ($stats['value'] as $v) {
             <?= $tile(_l('ams_asset_value'), $valueHtml ? implode('<br>', $valueHtml) : '-', 'fa-solid fa-coins'); ?>
         </div>
 
-        <?php if ($inventory['kinds']) { ?>
-        <div class="row">
-            <?= $tile(_l('ams_inventory_value'), e(app_format_money($inventory['value'], get_base_currency())), 'fa-solid fa-boxes-stacked', admin_url('asset_management/inventory/levels')); ?>
-            <?= $tile(_l('ams_low_stock'), '<span class="' . ($inventory['low'] ? 'text-warning' : '') . '">' . (int) $inventory['low'] . '</span>', 'fa-solid fa-arrow-trend-down'); ?>
-            <?= $tile(_l('ams_out_of_stock'), '<span class="' . ($inventory['out'] ? 'text-danger' : '') . '">' . (int) $inventory['out'] . '</span>', 'fa-solid fa-triangle-exclamation'); ?>
-            <?php if (in_array('accessory', $inventory['kinds'])) { ?>
-            <?= $tile(_l('ams_accessories_out'), ams_qty($inventory['accessories_out']), 'fa-solid fa-computer-mouse', admin_url('asset_management/inventory/checkouts')); ?>
-            <?php } ?>
-        </div>
-        <?php } ?>
-
         <?php
         $p   = db_prefix();
         $ops = [];
@@ -81,32 +70,6 @@ foreach ($stats['value'] as $v) {
 
         <div class="row">
             <div class="col-md-5">
-                <?php if ($inventory['kinds']) { ?>
-                <div class="panel_s">
-                    <div class="panel-body">
-                        <h4 class="tw-mt-0 tw-font-semibold tw-text-lg"><?= _l('ams_stock_alerts'); ?></h4>
-                        <?php if (! $inventory['alerts']) { ?>
-                        <p class="text-muted tw-mb-0"><?= _l('ams_no_stock_alerts'); ?></p>
-                        <?php } else { ?>
-                        <table class="table tw-mb-0">
-                            <tbody>
-                                <?php foreach ($inventory['alerts'] as $al) { ?>
-                                <tr>
-                                    <td>
-                                        <a href="<?= admin_url('asset_management/inventory/view/' . $al['id']); ?>"><?= e($al['sku']); ?></a>
-                                        <span class="text-muted"><?= e($al['name']); ?></span>
-                                    </td>
-                                    <td class="text-right"><?= ams_qty($al['available']); ?> / <?= ams_qty($al['reorder_level']); ?> <?= e($al['unit']); ?></td>
-                                    <td class="text-right"><?= ams_stock_state_badge($al['state']); ?></td>
-                                </tr>
-                                <?php } ?>
-                            </tbody>
-                        </table>
-                        <?php } ?>
-                    </div>
-                </div>
-                <?php } ?>
-
                 <div class="panel_s">
                     <div class="panel-body">
                         <h4 class="tw-mt-0 tw-font-semibold tw-text-lg"><?= _l('ams_assets_by_status'); ?></h4>

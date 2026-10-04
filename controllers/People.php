@@ -66,14 +66,6 @@ class People extends AdminController
         App_table::find('ams_assets')->output(['status_id' => 0, 'category_id' => 0, 'holder_staff' => (int) $staffId]);
     }
 
-    public function checkouts_table($staffId)
-    {
-        // Accessory checkouts belong to the accessories permission, not assets.
-        if (! ams_item_can('view', 'accessory')) {
-            ajax_access_denied();
-        }
-        App_table::find('ams_checkouts')->output(['item_id' => 0, 'holder_staff' => (int) $staffId]);
-    }
 
     public function acceptances_table($staffId)
     {

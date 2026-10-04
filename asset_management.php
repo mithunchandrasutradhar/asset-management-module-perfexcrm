@@ -4,7 +4,7 @@ defined('BASEPATH') or exit('No direct script access allowed');
 
 /*
 Module Name: Asset Management
-Description: IT asset & inventory management - asset register, check-out/check-in, requests, accessories/consumables/stock, maintenance, licences, purchase orders, depreciation, labels, audits, reports and a read-only HostBill inventory with low-stock alerts
+Description: IT asset management - asset register, check-out/check-in, requests, maintenance, licences, purchase orders, depreciation, labels, audits, reports and a read-only HostBill inventory with low-stock alerts
 Version: 1.0.0
 Requires at least: 3.3.*
 Author: Alpha Net BD
@@ -16,7 +16,7 @@ define('AMS_MODULE_NAME', 'asset_management');
 // re-runs the (idempotent) installer on the next admin page load, so updated
 // module files never run against a stale schema and no manual
 // deactivate/reactivate is needed.
-define('AMS_SCHEMA_VERSION', 9);
+define('AMS_SCHEMA_VERSION', 10);
 
 define('AMS_UPLOAD_PATH', FCPATH . 'uploads/asset_management/');
 
@@ -30,15 +30,12 @@ hooks()->add_action('after_custom_fields_select_options', 'ams_custom_fields_sel
 hooks()->add_filter('before_single_setting_updated_in_loop', 'ams_encode_array_settings');
 hooks()->add_filter('after_parse_email_template_message', 'ams_plain_mail_subject');
 hooks()->add_action('after_cron_run', 'ams_ensure_schema', 1); // before the module's cron jobs
-hooks()->add_action('after_cron_run', 'ams_cron_verify_stock_levels');
 hooks()->add_action('after_cron_run', 'ams_cron_hostbill_sync');
 
 // People workflows (acceptances, requests, overdue, staff lifecycle, email)
 hooks()->add_action('ams_after_asset_checkout', 'ams_people_on_asset_checkout');
 hooks()->add_action('ams_after_asset_checkin', 'ams_people_on_asset_checkin');
 hooks()->add_action('ams_after_asset_status_changed', 'ams_people_on_asset_status_changed');
-hooks()->add_action('ams_after_item_checkout', 'ams_people_on_item_checkout');
-hooks()->add_action('ams_after_item_checkout_closed', 'ams_people_on_item_checkout_closed');
 hooks()->add_filter('before_staff_status_change', 'ams_people_on_staff_status_change', 10, 2);
 hooks()->add_action('before_delete_staff_member', 'ams_people_on_staff_delete');
 hooks()->add_action('after_cron_run', 'ams_cron_overdue_reminders');
@@ -140,41 +137,6 @@ function ams_register_permissions()
         ],
     ], _l('ams_perm_assets'));
 
-    $adjust = _l('ams_perm_adjust');
-
-    register_staff_capabilities('ams_accessories', [
-        'capabilities' => [
-            'view_own' => $view_own,
-            'view'     => $view,
-            'create'   => $create,
-            'edit'     => $edit,
-            'delete'   => $delete,
-            'checkout' => _l('ams_perm_checkout_checkin'),
-            'adjust'   => $adjust,
-        ],
-    ], _l('ams_perm_accessories'));
-
-    register_staff_capabilities('ams_consumables', [
-        'capabilities' => [
-            'view'   => $view,
-            'create' => $create,
-            'edit'   => $edit,
-            'delete' => $delete,
-            'issue'  => _l('ams_perm_issue'),
-            'adjust' => $adjust,
-        ],
-    ], _l('ams_perm_consumables'));
-
-    register_staff_capabilities('ams_stock', [
-        'capabilities' => [
-            'view'   => $view,
-            'create' => $create,
-            'edit'   => $edit,
-            'delete' => $delete,
-            'issue'  => _l('ams_perm_issue'),
-            'adjust' => $adjust,
-        ],
-    ], _l('ams_perm_stock'));
 
     register_staff_capabilities('ams_maintenance', [
         'capabilities' => ['view' => $view, 'create' => $create, 'edit' => $edit, 'delete' => $delete],
@@ -246,7 +208,7 @@ function ams_register_permissions()
 
 // ─── Menu ─────────────────────────────────────────────────────────────────
 // Everything lives under the "Assets" sidebar item, ordered in blocks (Perfex has one
-// level of sub-items): self-service · assets · operations · inventory · HostBill · administration.
+// level of sub-items): self-service · assets · operations · HostBill · administration.
 
 function ams_init_menu_items()
 {
@@ -254,8 +216,6 @@ function ams_init_menu_items()
 
     $canAssetsAll = staff_can('view', 'ams_assets');
     $canAssets    = $canAssetsAll || staff_can('view_own', 'ams_assets');
-    $itemKinds    = array_filter(array_keys(ams_item_kinds()), 'ams_item_can_view_kind_page');
-    $canStockAll  = (bool) ams_item_viewable_kinds();
     $canHostbill  = staff_can('view', 'ams_hostbill');
     $canSetup     = staff_can('view', 'ams_setup');
     $canSettings  = ams_can_view_settings();
@@ -274,14 +234,6 @@ function ams_init_menu_items()
         [staff_can('view', 'ams_licenses'), 'ams-licenses', 'ams_licenses', 'asset_management/licenses'],
         [staff_can('view', 'ams_procurement'), 'ams-procurement', 'ams_purchase_orders', 'asset_management/procurement'],
         [$canAssetsAll, 'ams-purchases', 'ams_menu_purchases', 'asset_management/purchases'],
-    ];
-    // Inventory
-    foreach ($itemKinds as $kind) {
-        $items[] = [true, 'ams-inventory-' . $kind, ams_item_kinds()[$kind]['plural'], 'asset_management/inventory/index/' . $kind];
-    }
-    $items = array_merge($items, [
-        [$canStockAll, 'ams-stock-levels', 'ams_stock_levels', 'asset_management/inventory/levels'],
-        [$canStockAll, 'ams-stock-movements', 'ams_stock_movements', 'asset_management/inventory/movements'],
         // HostBill
         [$canHostbill, 'ams-hb-inventory', 'ams_hb_inventory', 'asset_management/hostbill'],
         // Administration
@@ -289,7 +241,7 @@ function ams_init_menu_items()
         [ams_can_import(), 'ams-import', 'ams_import', 'asset_management/import'],
         // Setup = master data + department approvers + module settings (tabs, each by permission).
         [$canSetup || $canSettings, 'ams-setup', 'ams_menu_setup', $canSetup ? 'asset_management/setup/index/categories' : 'asset_management/configuration'],
-    ]);
+    ];
 
     $items = array_values(array_filter($items, fn ($i) => $i[0]));
     if (! $items) {
@@ -319,7 +271,7 @@ function ams_init_menu_items()
 
 function ams_custom_fields_select_option($custom_field)
 {
-    foreach (['ams_assets' => 'ams_custom_field_assets', 'ams_items' => 'ams_custom_field_items'] as $value => $label) {
+    foreach (['ams_assets' => 'ams_custom_field_assets'] as $value => $label) {
         $selected = isset($custom_field) && $custom_field->fieldto == $value ? ' selected' : '';
         echo '<option value="' . $value . '"' . $selected . '>' . _l($label) . '</option>';
     }
@@ -332,7 +284,7 @@ function ams_custom_fields_select_option($custom_field)
  */
 function ams_encode_array_settings($hookData)
 {
-    if (in_array($hookData['name'], ['ams_low_stock_notify_staff', 'ams_hb_alert_staff', 'ams_manager_notify_staff'])) {
+    if (in_array($hookData['name'], ['ams_hb_alert_staff', 'ams_manager_notify_staff'])) {
         $values             = array_values(array_filter(array_map('intval', (array) $hookData['value'])));
         $hookData['value'] = json_encode($values);
     }
@@ -373,34 +325,12 @@ function ams_cron_hostbill_sync()
     $CI->ams_hostbill_model->refresh();
 }
 
-/**
- * Daily-ish integrity check: the cached stock levels must equal the ledger sum.
- * Mismatches are logged (not silently repaired) so a bug never hides itself.
- */
-function ams_cron_verify_stock_levels()
-{
-    $last = (int) get_option('ams_last_stock_verify');
-    if (time() - $last < 86400) {
-        return;
-    }
-    update_option('ams_last_stock_verify', time());
-
-    $CI = &get_instance();
-    $CI->load->model(AMS_MODULE_NAME . '/ams_inventory_model');
-    $mismatches = $CI->ams_inventory_model->verify_levels(false);
-
-    if ($mismatches) {
-        log_activity('AMS stock level check: ' . count($mismatches) . ' item/location level(s) differ from the ledger, e.g. item #'
-            . $mismatches[0]['item_id'] . ' at location #' . $mismatches[0]['location_id']
-            . ' (ledger ' . $mismatches[0]['total'] . ', cached ' . $mismatches[0]['cached'] . ')');
-    }
-}
 
 // ─── Dashboard widgets ────────────────────────────────────────────────────
 
 function ams_register_dashboard_widgets($widgets)
 {
-    if (staff_can('view', 'ams_assets') || ams_item_viewable_kinds()) {
+    if (staff_can('view', 'ams_assets')) {
         $widgets[] = [
             'path'      => AMS_MODULE_NAME . '/widgets/ams_overview',
             'container' => 'right-4',
@@ -419,10 +349,6 @@ function ams_register_tables()
         'ams_purchases'   => ['db' => 'ams_assets', 'view' => 'tables/purchases', 'cf' => null],
         'ams_history'     => ['db' => 'ams_asset_history', 'view' => 'tables/history', 'cf' => null],
         'ams_audit_log'   => ['db' => 'ams_audit_log', 'view' => 'tables/audit_log', 'cf' => null],
-        'ams_items'       => ['db' => 'ams_items', 'view' => 'tables/items', 'cf' => 'ams_items'],
-        'ams_movements'   => ['db' => 'ams_stock_movements', 'view' => 'tables/movements', 'cf' => null],
-        'ams_levels'      => ['db' => 'ams_stock_levels', 'view' => 'tables/levels', 'cf' => null],
-        'ams_checkouts'   => ['db' => 'ams_item_checkouts', 'view' => 'tables/checkouts', 'cf' => null],
         'ams_hb_inventory' => ['db' => 'ams_hb_products', 'view' => 'tables/hb_inventory', 'cf' => null, 'pk' => 'hb_product_id'],
         'ams_hb_log'      => ['db' => 'ams_hb_sync_log', 'view' => 'tables/hb_log', 'cf' => null],
         'ams_acceptances' => ['db' => 'ams_acceptances', 'view' => 'tables/acceptances', 'cf' => null],
@@ -498,15 +424,6 @@ function ams_people_on_asset_status_changed($data)
     }
 }
 
-function ams_people_on_item_checkout($data)
-{
-    ams_people_model()->on_item_checkout($data);
-}
-
-function ams_people_on_item_checkout_closed($checkoutId)
-{
-    ams_people_model()->cancel_pending('accessory', $checkoutId);
-}
 
 function ams_people_on_staff_status_change($status, $staffId)
 {
@@ -728,7 +645,7 @@ function ams_staff_profile_shortcut()
 
     $staffId = (int) $CI->uri->segment(4);
     $h       = ams_people_model()->holdings($staffId);
-    $label   = _l('ams_staff_assets_button', [$h['assets'], ams_qty($h['accessories'])]); ?>
+    $label   = _l('ams_staff_assets_button', $h['assets']); ?>
 <script>
     $(function() {
         var btn = $('<a class="btn btn-default tw-mb-3"><i class="fa-solid fa-laptop tw-mr-1"></i></a>')

@@ -146,12 +146,12 @@ class Ams_setup_model extends App_Model
         // Where the record is still used, named in the refusal message.
         $labels = [
             'ams_assets' => 'ams_assets', 'ams_categories' => 'ams_categories', 'ams_models' => 'ams_models',
-            'ams_items' => 'ams_stock_items', 'ams_licenses' => 'ams_licenses', 'ams_po_lines' => 'ams_purchase_orders',
+            'ams_licenses' => 'ams_licenses', 'ams_po_lines' => 'ams_purchase_orders',
             'ams_purchase_orders' => 'ams_purchase_orders', 'ams_goods_receipts' => 'ams_purchase_orders',
             'ams_requests' => 'ams_requests', 'ams_audits' => 'ams_audits', 'ams_audit_lines' => 'ams_audits',
             'ams_maintenance' => 'ams_maintenance', 'ams_maintenance_schedules' => 'ams_maintenance',
-            'ams_disposals' => 'ams_disposal_register', 'ams_stock_movements' => 'ams_stock_movements',
-            'ams_stock_levels' => 'ams_stock_levels', 'ams_item_checkouts' => 'ams_stock_movements', 'ams_locations' => 'ams_locations',
+            'ams_disposals' => 'ams_disposal_register',
+            'ams_locations' => 'ams_locations',
         ];
         $usedIn = [];
         foreach ($cfg['in_use'] as [$table, $column]) {

@@ -244,111 +244,6 @@ if (! $CI->db->table_exists($p . 'ams_audit_log')) {
     ) " . $engine);
 }
 
-// ─── Inventory (schema v2) ────────────────────────────────────────────────
-// Quantity-tracked items. kind = accessory (checked out & returned),
-// consumable (issued, not returned) or stock (goods, incl. sellable HostBill items).
-
-if (! $CI->db->table_exists($p . 'ams_items')) {
-    $CI->db->query('CREATE TABLE `' . $p . "ams_items` (
-        `id` INT(11) NOT NULL AUTO_INCREMENT,
-        `sku` VARCHAR(60) NOT NULL,
-        `name` VARCHAR(191) NOT NULL,
-        `kind` VARCHAR(20) NOT NULL,
-        `category_id` INT(11) NULL,
-        `brand_id` INT(11) NULL,
-        `model_no` VARCHAR(100) NULL,
-        `unit` VARCHAR(20) NOT NULL DEFAULT 'pcs',
-        `cost` DECIMAL(15,2) NULL,
-        `sale_price` DECIMAL(15,2) NULL,
-        `reorder_level` DECIMAL(15,2) NOT NULL DEFAULT 0,
-        `reorder_qty` DECIMAL(15,2) NOT NULL DEFAULT 0,
-        `default_location_id` INT(11) NULL,
-        `is_sellable` TINYINT(1) NOT NULL DEFAULT 0,
-        `description` TEXT NULL,
-        `notes` TEXT NULL,
-        `active` TINYINT(1) NOT NULL DEFAULT 1,
-        `stock_alert` TINYINT(1) NOT NULL DEFAULT 0,
-        `created_by` INT(11) NULL,
-        `date_created` DATETIME NULL,
-        `updated_by` INT(11) NULL,
-        `date_updated` DATETIME NULL,
-        PRIMARY KEY (`id`),
-        UNIQUE KEY `sku` (`sku`),
-        KEY `kind` (`kind`),
-        KEY `category_id` (`category_id`),
-        KEY `brand_id` (`brand_id`),
-        KEY `active` (`active`)
-    ) " . $engine);
-}
-
-// Cached projection of the movement ledger (rebuildable at any time).
-if (! $CI->db->table_exists($p . 'ams_stock_levels')) {
-    $CI->db->query('CREATE TABLE `' . $p . "ams_stock_levels` (
-        `id` INT(11) NOT NULL AUTO_INCREMENT,
-        `item_id` INT(11) NOT NULL,
-        `location_id` INT(11) NOT NULL,
-        `on_hand` DECIMAL(15,2) NOT NULL DEFAULT 0,
-        `reserved` DECIMAL(15,2) NOT NULL DEFAULT 0,
-        PRIMARY KEY (`id`),
-        UNIQUE KEY `item_location` (`item_id`, `location_id`),
-        KEY `location_id` (`location_id`)
-    ) " . $engine);
-}
-
-// Append-only stock ledger. type: receive | issue | checkout | return |
-// transfer_in | transfer_out | adjust (sale | reserve | release come with HostBill).
-if (! $CI->db->table_exists($p . 'ams_stock_movements')) {
-    $CI->db->query('CREATE TABLE `' . $p . "ams_stock_movements` (
-        `id` INT(11) NOT NULL AUTO_INCREMENT,
-        `item_id` INT(11) NOT NULL,
-        `location_id` INT(11) NOT NULL,
-        `qty` DECIMAL(15,2) NOT NULL,
-        `type` VARCHAR(20) NOT NULL,
-        `ref_type` VARCHAR(30) NULL,
-        `ref_id` INT(11) NULL,
-        `unit_cost` DECIMAL(15,2) NULL,
-        `assigned_type` VARCHAR(20) NULL,
-        `assigned_id` INT(11) NULL,
-        `department_id` INT(11) NULL,
-        `supplier_id` INT(11) NULL,
-        `reference` VARCHAR(100) NULL,
-        `reason` VARCHAR(30) NULL,
-        `note` TEXT NULL,
-        `staff_id` INT(11) NULL,
-        `date_created` DATETIME NOT NULL,
-        PRIMARY KEY (`id`),
-        KEY `item_id` (`item_id`),
-        KEY `location_id` (`location_id`),
-        KEY `type` (`type`),
-        KEY `ref` (`ref_type`, `ref_id`),
-        KEY `date_created` (`date_created`)
-    ) " . $engine);
-}
-
-// Accessories checked out to Perfex staff / departments (partial returns allowed).
-if (! $CI->db->table_exists($p . 'ams_item_checkouts')) {
-    $CI->db->query('CREATE TABLE `' . $p . "ams_item_checkouts` (
-        `id` INT(11) NOT NULL AUTO_INCREMENT,
-        `item_id` INT(11) NOT NULL,
-        `location_id` INT(11) NOT NULL,
-        `qty` DECIMAL(15,2) NOT NULL,
-        `returned_qty` DECIMAL(15,2) NOT NULL DEFAULT 0,
-        `assigned_type` VARCHAR(20) NOT NULL,
-        `assigned_id` INT(11) NOT NULL,
-        `department_id` INT(11) NULL,
-        `expected_return` DATE NULL,
-        `status` VARCHAR(10) NOT NULL DEFAULT 'open',
-        `note` TEXT NULL,
-        `staff_id` INT(11) NULL,
-        `date_created` DATETIME NOT NULL,
-        `date_closed` DATETIME NULL,
-        PRIMARY KEY (`id`),
-        KEY `item_id` (`item_id`),
-        KEY `assigned` (`assigned_type`, `assigned_id`),
-        KEY `status` (`status`)
-    ) " . $engine);
-}
-
 // ─── HostBill inventory (read-only; schema v3, reduced in v7) ─────────────
 // HostBill owns its product stock; Perfex only keeps a copy to show it and to
 // raise low / out-of-stock alerts. low_level = per-product level (NULL = the
@@ -413,12 +308,9 @@ if (! $CI->db->field_exists('require_acceptance', $p . 'ams_categories')) {
 if (! $CI->db->field_exists('overdue_notified_at', $p . 'ams_assets')) {
     $CI->db->query('ALTER TABLE `' . $p . 'ams_assets` ADD `overdue_notified_at` DATETIME NULL');
 }
-if (! $CI->db->field_exists('overdue_notified_at', $p . 'ams_item_checkouts')) {
-    $CI->db->query('ALTER TABLE `' . $p . 'ams_item_checkouts` ADD `overdue_notified_at` DATETIME NULL');
-}
 
-// Staff acknowledgement of assets / accessories checked out to them.
-// rel_type: asset | accessory ; status: pending | accepted | declined | cancelled
+// Staff acknowledgement of assets checked out to them.
+// rel_type: asset ; status: pending | accepted | declined | cancelled
 if (! $CI->db->table_exists($p . 'ams_acceptances')) {
     $CI->db->query('CREATE TABLE `' . $p . "ams_acceptances` (
         `id` INT(11) NOT NULL AUTO_INCREMENT,
@@ -441,7 +333,7 @@ if (! $CI->db->table_exists($p . 'ams_acceptances')) {
     ) " . $engine);
 }
 
-// Asset requests and issue reports. type: asset | accessory | consumable | issue
+// Asset requests and issue reports. type: asset | issue
 // status: pending_dept | pending_manager | approved | rejected | fulfilled | cancelled
 if (! $CI->db->table_exists($p . 'ams_requests')) {
     $CI->db->query('CREATE TABLE `' . $p . "ams_requests` (
@@ -451,7 +343,6 @@ if (! $CI->db->table_exists($p . 'ams_requests')) {
         `department_id` INT(11) NULL,
         `type` VARCHAR(20) NOT NULL,
         `category_id` INT(11) NULL,
-        `item_id` INT(11) NULL,
         `asset_id` INT(11) NULL,
         `qty` DECIMAL(15,2) NOT NULL DEFAULT 1,
         `subject` VARCHAR(191) NOT NULL,
@@ -476,10 +367,6 @@ if (! $CI->db->table_exists($p . 'ams_requests')) {
         KEY `status` (`status`),
         KEY `type` (`type`)
     ) " . $engine);
-}
-// Issue reports can also be about accessories a staff member holds (the check-out they report on).
-if ($CI->db->table_exists($p . 'ams_requests') && ! $CI->db->field_exists('checkout_id', $p . 'ams_requests')) {
-    $CI->db->query('ALTER TABLE `' . $p . 'ams_requests` ADD `checkout_id` INT NULL AFTER `item_id`, ADD KEY `checkout_id` (`checkout_id`)');
 }
 
 // Perfex department -> staff who approve requests from that department.
@@ -623,7 +510,7 @@ if (! $CI->db->table_exists($p . 'ams_purchase_orders')) {
     ) " . $engine);
 }
 
-// line_type: asset (serialized, one asset per unit) | item (stock quantity)
+// line_type: asset (serialized, one asset per unit)
 if (! $CI->db->table_exists($p . 'ams_po_lines')) {
     $CI->db->query('CREATE TABLE `' . $p . "ams_po_lines` (
         `id` INT(11) NOT NULL AUTO_INCREMENT,
@@ -633,7 +520,6 @@ if (! $CI->db->table_exists($p . 'ams_po_lines')) {
         `category_id` INT(11) NULL,
         `brand_id` INT(11) NULL,
         `model_id` INT(11) NULL,
-        `item_id` INT(11) NULL,
         `qty` DECIMAL(15,2) NOT NULL,
         `unit_cost` DECIMAL(15,2) NOT NULL DEFAULT 0,
         `received_qty` DECIMAL(15,2) NOT NULL DEFAULT 0,
@@ -768,7 +654,7 @@ $amsTemplates = [
         '<p>Hi {staff_firstname},</p><p>Your request <strong>{ams_request_no}</strong> ({ams_item}) is now <strong>{ams_status}</strong>.</p><p>{ams_details}</p><p><a href="{ams_link}">{ams_link}</a></p>'],
     ['ams-overdue-return', 'Overdue asset return reminder', 'Please return {ams_item}',
         '<p>Hi {staff_firstname},</p><p><strong>{ams_item}</strong> was due back on {ams_due_date}. Please return it or contact the asset manager.</p><p><a href="{ams_link}">{ams_link}</a></p>'],
-    ['ams-low-stock', 'Low / out-of-stock alert', 'Stock alert: {ams_item}',
+    ['ams-low-stock', 'HostBill low / out-of-stock alert', 'Stock alert: {ams_item}',
         '<p>{ams_item} is <strong>{ams_status}</strong>: {ams_details} available.</p><p><a href="{ams_link}">{ams_link}</a></p>'],
     ['ams-system-alert', 'HostBill inventory refresh alert', 'Asset Management alert: {ams_status}',
         '<p>{ams_details}</p><p><a href="{ams_link}">{ams_link}</a></p>'],
@@ -823,9 +709,6 @@ add_option('ams_asset_tag_separator', '-');
 add_option('ams_default_category_code', 'GEN');
 add_option('ams_warranty_expiring_days', '30');
 add_option('ams_max_upload_mb', '10');
-add_option('ams_item_sku_prefix', 'ITM');
-add_option('ams_block_negative_stock', '1');
-add_option('ams_low_stock_notify_staff', '[]');
 
 // HostBill inventory (all editable in Assets → Setup → HostBill Settings)
 add_option('ams_hb_enabled', '0');
@@ -844,8 +727,7 @@ add_option('ams_hb_alert_low', '1');
 add_option('ams_hb_alert_out', '1');
 add_option('ams_hb_alert_sync_fail', '1');
 add_option('ams_hb_alert_email', '1');
-add_option('ams_hb_alert_recipients', 'hostbill'); // hostbill (own list) | stock (same as stock alerts)
-add_option('ams_hb_alert_staff', '[]');
+add_option('ams_hb_alert_staff', '[]');            // staff who get HostBill alerts
 add_option('ams_hb_log_retention_days', '30');
 add_option('ams_hb_last_sync', '');
 add_option('ams_hb_last_sync_status', '');
@@ -857,9 +739,6 @@ foreach (['ams_hb_lookback_days', 'ams_hb_max_pages', 'ams_hb_reserve_on_pending
     'ams_hb_webhook_enabled', 'ams_hb_webhook_secret', 'ams_hb_webhook_ips'] as $oldOption) {
     delete_option($oldOption);
 }
-
-// Stock items: the "Sellable" flag is optional (Assets → Setup → General Settings).
-add_option('ams_item_sellable_enabled', '0');
 
 // People workflows
 add_option('ams_acceptance_mode', 'always');
@@ -903,3 +782,36 @@ if (! file_exists(AMS_UPLOAD_PATH . '.htaccess')) {
 if (! file_exists(AMS_UPLOAD_PATH . 'index.html')) {
     file_put_contents(AMS_UPLOAD_PATH . 'index.html', '');
 }
+
+// ─── Stock management removed (schema v10) ────────────────────────────────
+// Quantity stock (accessories / consumables / stock items) is now managed in HostBill;
+// small items are tracked as assets. Drop the stock tables, columns and leftovers.
+foreach (['ams_item_checkouts', 'ams_stock_movements', 'ams_stock_levels', 'ams_items'] as $oldTable) {
+    $CI->db->query('DROP TABLE IF EXISTS `' . $p . $oldTable . '`');
+}
+if ($CI->db->field_exists('checkout_id', $p . 'ams_requests')) {
+    $CI->db->query('DELETE FROM `' . $p . 'ams_requests` WHERE type IN ("accessory", "consumable") OR checkout_id IS NOT NULL');
+    $CI->db->query('ALTER TABLE `' . $p . 'ams_requests` DROP COLUMN `checkout_id`');
+}
+if ($CI->db->field_exists('item_id', $p . 'ams_requests')) {
+    $CI->db->query('DELETE FROM `' . $p . 'ams_requests` WHERE type IN ("accessory", "consumable")');
+    $CI->db->query('ALTER TABLE `' . $p . 'ams_requests` DROP COLUMN `item_id`');
+}
+if ($CI->db->field_exists('item_id', $p . 'ams_po_lines')) {
+    $CI->db->query('DELETE FROM `' . $p . 'ams_po_lines` WHERE line_type = "item"');
+    $CI->db->query('ALTER TABLE `' . $p . 'ams_po_lines` DROP COLUMN `item_id`');
+}
+$CI->db->where('rel_type', 'accessory')->delete($p . 'ams_acceptances');
+$CI->db->where_in('feature', ['ams_accessories', 'ams_consumables', 'ams_stock'])->delete($p . 'staff_permissions');
+foreach (['ams_item_sku_prefix', 'ams_block_negative_stock', 'ams_low_stock_notify_staff', 'ams_item_sellable_enabled',
+    'ams_hb_alert_recipients', 'ams_last_stock_verify'] as $oldOption) {
+    delete_option($oldOption);
+}
+$CI->db->query('DELETE FROM `' . $p . 'customfieldsvalues` WHERE fieldto = "ams_items"');
+$CI->db->where('fieldto', 'ams_items')->delete($p . 'customfields');
+if ($CI->db->table_exists($p . 'ams_audit_log')) {
+    $CI->db->where('rel_type', 'ams_items')->delete($p . 'ams_audit_log');
+}
+$CI->db->where('code', 'SKU:ITM')->delete($p . 'ams_tag_sequences');
+$CI->db->query('DELETE FROM `' . $p . 'notifications` WHERE description IN ("ams_notify_low_stock", "ams_notify_out_of_stock") OR link LIKE "asset_management/inventory%"');
+$CI->db->query('UPDATE `' . $p . 'emailtemplates` SET name = CONCAT("HostBill ", name) WHERE slug = "ams-low-stock" AND name LIKE "Low / out-of-stock alert%"');

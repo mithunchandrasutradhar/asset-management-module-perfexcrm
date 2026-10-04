@@ -21,9 +21,6 @@
                     <div class="panel-body">
                         <ul class="nav nav-tabs nav-tabs-horizontal" role="tablist">
                             <li class="active"><a href="#tab_assets" data-toggle="tab"><?= _l('ams_assets'); ?> <span class="badge"><?= (int) $holdings['assets']; ?></span></a></li>
-                            <?php if (ams_item_can('view', 'accessory')) { ?>
-                            <li><a href="#tab_accessories" data-toggle="tab"><?= _l('ams_accessories'); ?> <span class="badge"><?= ams_qty($holdings['accessories']); ?></span></a></li>
-                            <?php } ?>
                             <li><a href="#tab_acceptances" data-toggle="tab"><?= _l('ams_acceptances'); ?> <?php if ($holdings['acceptances']) { ?><span class="badge"><?= (int) $holdings['acceptances']; ?></span><?php } ?></a></li>
                         </ul>
                         <div class="tab-content tw-mt-4">
@@ -33,17 +30,9 @@
                                     _l('ams_assigned_to'), _l('ams_department'), _l('ams_location'), _l('ams_warranty'), _l('ams_purchase_cost'), _l('ams_purchase_date'),
                                 ], 'ams-staff-assets'); ?>
                             </div>
-                            <?php if (ams_item_can('view', 'accessory')) { ?>
-                            <div class="tab-pane" id="tab_accessories">
-                                <?php render_datatable([
-                                    _l('ams_date'), _l('ams_item'), _l('ams_quantity'), _l('ams_returned'), _l('ams_outstanding'),
-                                    _l('ams_assigned_to'), _l('ams_department'), _l('ams_expected_return'), _l('ams_status'), _l('ams_done_by'),
-                                ], 'ams-staff-checkouts'); ?>
-                            </div>
-                            <?php } ?>
                             <div class="tab-pane" id="tab_acceptances">
                                 <?php render_datatable([
-                                    _l('ams_date'), _l('ams_item'), _l('ams_item_kind'), _l('ams_status'), _l('ams_responded'), _l('ams_signed_name'), _l('ams_assigned_by'),
+                                    _l('ams_date'), _l('ams_asset'), _l('ams_status'), _l('ams_responded'), _l('ams_signed_name'), _l('ams_assigned_by'),
                                 ], 'ams-staff-acceptances'); ?>
                             </div>
                         </div>
@@ -79,9 +68,6 @@
         var id = <?= (int) $staff->staffid; ?>;
         initDataTable('.table-ams-staff-assets', admin_url + 'asset_management/people/assets_table/' + id, [0], [0], {}, [1, 'asc'])
             .columns([0, 7, 11, 12]).visible(false, false).columns.adjust();
-        <?php if (ams_item_can('view', 'accessory')) { ?>
-        initDataTable('.table-ams-staff-checkouts', admin_url + 'asset_management/people/checkouts_table/' + id, [], [], {}, [0, 'desc']);
-        <?php } ?>
         initDataTable('.table-ams-staff-acceptances', admin_url + 'asset_management/people/acceptances_table/' + id, [], [], {}, [0, 'desc']);
     });
 

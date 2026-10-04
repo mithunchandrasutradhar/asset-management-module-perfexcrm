@@ -27,10 +27,6 @@ class Configuration extends AdminController
             'ams_default_category_code'    => 'tag:10',
             'ams_warranty_expiring_days'   => 'int:1:3650',
             'ams_max_upload_mb'            => 'int:1:512',
-            'ams_item_sku_prefix'          => 'tag:10',
-            'ams_low_stock_notify_staff'   => 'staff',
-            'ams_block_negative_stock'     => 'bool',
-            'ams_item_sellable_enabled'    => 'bool',
             'ams_acceptance_mode'          => 'enum:always,category,never',
             'ams_overdue_reminder_days'    => 'int:1:365',
             'ams_request_prefix'           => 'str:10',
@@ -73,7 +69,6 @@ class Configuration extends AdminController
             'ams_hb_alert_out'          => 'bool',
             'ams_hb_alert_sync_fail'    => 'bool',
             'ams_hb_alert_email'        => 'bool',
-            'ams_hb_alert_recipients'   => 'enum:hostbill,stock',
             'ams_hb_alert_staff'        => 'staff',
             'ams_hb_log_retention_days' => 'int:1:365',
         ],
@@ -158,7 +153,7 @@ class Configuration extends AdminController
                 $value = trim((string) $value);
 
                 return mb_strlen($value) <= (int) $parts[1] ? $value : null;
-            case 'tag': // part of asset tags / SKUs, which go into QR links and barcodes
+            case 'tag': // part of asset tags, which go into QR links and barcodes
                 $value = trim((string) $value);
 
                 return preg_match('/^[A-Za-z0-9._-]{0,' . (int) $parts[1] . '}$/', $value) ? $value : null;

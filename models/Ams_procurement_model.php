@@ -4,9 +4,8 @@ defined('BASEPATH') or exit('No direct script access allowed');
 
 /**
  * Purchase orders → approval → sent to supplier → goods receipt.
- * Receiving an "asset" line creates one asset per unit (serials, supplier,
- * PO number, invoice, cost, warranty); an "item" line receives stock through
- * the inventory ledger. Asset requests can be turned into a draft PO.
+ * Every line is an asset line: receiving it creates one asset per unit (serials,
+ * supplier, PO number, invoice, cost, warranty). Asset requests can be turned into a draft PO.
  */
 class Ams_procurement_model extends App_Model
 {
@@ -23,9 +22,8 @@ class Ams_procurement_model extends App_Model
             ->where('po.id', (int) $id)->get()->row();
 
         if ($po) {
-            $po->lines = $this->db->query('SELECT l.*, i.sku, i.name item_name, i.unit, IF(pc.id IS NULL, c.name, CONCAT(pc.name, " › ", c.name)) category_name
+            $po->lines = $this->db->query('SELECT l.*, IF(pc.id IS NULL, c.name, CONCAT(pc.name, " › ", c.name)) category_name
                 FROM ' . $this->t('ams_po_lines') . ' l
-                LEFT JOIN ' . $this->t('ams_items') . ' i ON i.id = l.item_id
                 LEFT JOIN ' . $this->t('ams_categories') . ' c ON c.id = l.category_id
                 LEFT JOIN ' . $this->t('ams_categories') . ' pc ON pc.id = c.parent_id
                 WHERE l.po_id = ? ORDER BY l.sort_order, l.id', [(int) $id])->result_array();
@@ -57,7 +55,7 @@ class Ams_procurement_model extends App_Model
             $desc = trim((string) ($l['description'] ?? ''));
             $qty  = (float) ($l['qty'] ?? 0);
             $cost = (float) str_replace(',', '', (string) ($l['unit_cost'] ?? 0));
-            $type = ($l['line_type'] ?? '') === 'item' ? 'item' : 'asset';
+            $type = 'asset'; // purchase orders are for assets only
 
             if ($desc === '' && ! $qty) {
                 continue; // empty row
@@ -65,23 +63,19 @@ class Ams_procurement_model extends App_Model
             if ($desc === '' || $qty <= 0 || $cost < 0) {
                 return ['success' => false, 'message' => _l('ams_po_line_invalid', $i + 1)];
             }
-            if ($type === 'asset' && floor($qty) != $qty) {
+            if (floor($qty) != $qty) {
                 return ['success' => false, 'message' => _l('ams_po_asset_qty_whole', $i + 1)];
             }
-            if ($type === 'item' && total_rows($this->t('ams_items'), ['id' => (int) ($l['item_id'] ?? 0)]) === 0) {
-                return ['success' => false, 'message' => _l('ams_po_item_required', $i + 1)];
-            }
-            if ($type === 'asset' && total_rows($this->t('ams_categories'), ['id' => (int) ($l['category_id'] ?? 0)]) === 0) {
+            if (total_rows($this->t('ams_categories'), ['id' => (int) ($l['category_id'] ?? 0)]) === 0) {
                 return ['success' => false, 'message' => _l('ams_po_category_required', $i + 1)];
             }
 
             $lines[] = [
                 'line_type'   => $type,
                 'description' => mb_substr($desc, 0, 255),
-                'category_id' => $type === 'asset' ? (int) $l['category_id'] : null,
-                'brand_id'    => $type === 'asset' ? ((int) ($l['brand_id'] ?? 0) ?: null) : null,
-                'model_id'    => $type === 'asset' ? ((int) ($l['model_id'] ?? 0) ?: null) : null,
-                'item_id'     => $type === 'item' ? (int) $l['item_id'] : null,
+                'category_id' => (int) $l['category_id'],
+                'brand_id'    => (int) ($l['brand_id'] ?? 0) ?: null,
+                'model_id'    => (int) ($l['model_id'] ?? 0) ?: null,
                 'qty'         => $qty,
                 'unit_cost'   => round($cost, 2),
                 'sort_order'  => count($lines),
@@ -262,7 +256,7 @@ class Ams_procurement_model extends App_Model
     /**
      * Goods receipt. $input: receipt_date, location_id, invoice_no, note,
      * qty[po_line_id], serials[po_line_id] (one per line), warranty_months[po_line_id].
-     * Everything is validated first; then assets / stock receipts are created.
+     * Everything is validated first; then the assets are created.
      */
     public function receive($id, $input)
     {
@@ -307,7 +301,6 @@ class Ams_procurement_model extends App_Model
 
         // ── execute
         $this->load->model(AMS_MODULE_NAME . '/ams_assets_model');
-        $this->load->model(AMS_MODULE_NAME . '/ams_inventory_model');
         $status = ams_get_status_by_key('in_store');
 
         // All or nothing, under a lock on the PO and its lines: a double submit (or two
@@ -379,20 +372,6 @@ class Ams_procurement_model extends App_Model
                         $errors[] = e($line['description']) . ': ' . $r['message'];
                         break;
                     }
-                }
-            } else {
-                $r = $this->ams_inventory_model->receive($line['item_id'], [
-                    'qty'         => $p['qty'],
-                    'location_id' => $location,
-                    'unit_cost'   => $line['unit_cost'],
-                    'supplier_id' => $po->supplier_id,
-                    'reference'   => trim($po->po_number . ' ' . $invoice),
-                    'note'        => _l('ams_po_received_note', $po->po_number),
-                ]);
-                if ($r['success']) {
-                    $received = $p['qty'];
-                } else {
-                    $errors[] = e($line['description']) . ': ' . $r['message'];
                 }
             }
 

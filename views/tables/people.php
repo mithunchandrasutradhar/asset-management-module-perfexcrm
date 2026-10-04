@@ -10,15 +10,12 @@ return App_table::find('ams_people')
         $t = $p . 'staff';
 
         $assetsSql = '(SELECT COUNT(*) FROM ' . $p . 'ams_assets x WHERE x.is_deleted = 0 AND x.assigned_type = "staff" AND x.assigned_id = ' . $t . '.staffid)';
-        $accSql    = '(SELECT IFNULL(SUM(c.qty - c.returned_qty), 0) FROM ' . $p . 'ams_item_checkouts c WHERE c.status = "open" AND c.assigned_type = "staff" AND c.assigned_id = ' . $t . '.staffid)';
-        $overdue   = '((SELECT COUNT(*) FROM ' . $p . 'ams_assets x WHERE x.is_deleted = 0 AND x.assigned_type = "staff" AND x.assigned_id = ' . $t . '.staffid AND x.expected_checkin < CURDATE())'
-            . ' + (SELECT COUNT(*) FROM ' . $p . 'ams_item_checkouts c WHERE c.status = "open" AND c.assigned_type = "staff" AND c.assigned_id = ' . $t . '.staffid AND c.expected_return < CURDATE()))';
+        $overdue   = '(SELECT COUNT(*) FROM ' . $p . 'ams_assets x WHERE x.is_deleted = 0 AND x.assigned_type = "staff" AND x.assigned_id = ' . $t . '.staffid AND x.expected_checkin < CURDATE())';
 
         $aColumns = [
             'CONCAT(' . $t . '.firstname, " ", ' . $t . '.lastname) as full_name',
             '(SELECT GROUP_CONCAT(d.name SEPARATOR ", ") FROM ' . $p . 'staff_departments sd JOIN ' . $p . 'departments d ON d.departmentid = sd.departmentid WHERE sd.staffid = ' . $t . '.staffid) as departments',
             $assetsSql . ' as assets_held',
-            $accSql . ' as accessories_held',
             $overdue . ' as overdue_count',
             '(SELECT COUNT(*) FROM ' . $p . 'ams_acceptances ac WHERE ac.status = "pending" AND ac.staff_id = ' . $t . '.staffid) as pending_acceptances',
             '(SELECT COUNT(*) FROM ' . $p . 'ams_requests r WHERE r.status IN ("pending_dept", "pending_manager", "approved") AND r.staff_id = ' . $t . '.staffid) as open_requests',
@@ -41,7 +38,6 @@ return App_table::find('ams_people')
                 . '<div class="row-options"><a href="' . $url . '">' . _l('view') . '</a> | <a href="' . admin_url('staff/member/' . $aRow['staffid']) . '">' . _l('ams_staff_profile') . '</a></div>';
             $row[] = e($aRow['departments']);
             $row[] = (int) $aRow['assets_held'] ?: '<span class="text-muted">0</span>';
-            $row[] = (float) $aRow['accessories_held'] ? ams_qty($aRow['accessories_held']) : '<span class="text-muted">0</span>';
             $row[] = (int) $aRow['overdue_count'] ? '<span class="text-danger tw-font-semibold">' . (int) $aRow['overdue_count'] . '</span>' : '<span class="text-muted">0</span>';
             $row[] = (int) $aRow['pending_acceptances'] ? '<span class="text-warning tw-font-semibold">' . (int) $aRow['pending_acceptances'] . '</span>' : '<span class="text-muted">0</span>';
             $row[] = (int) $aRow['open_requests'] ?: '<span class="text-muted">0</span>';
@@ -62,8 +58,7 @@ return App_table::find('ams_people')
             ->options(fn () => collect(ams_department_options())->map(fn ($d) => ['value' => $d['departmentid'], 'label' => $d['name']])->all()),
         App_table_filter::new('holds_items', 'BooleanRule')->label(_l('ams_holds_items'))->raw(function ($value) {
             $p   = db_prefix();
-            $sql = '(EXISTS (SELECT 1 FROM ' . $p . 'ams_assets x WHERE x.is_deleted = 0 AND x.assigned_type = "staff" AND x.assigned_id = ' . $p . 'staff.staffid)'
-                . ' OR EXISTS (SELECT 1 FROM ' . $p . 'ams_item_checkouts c WHERE c.status = "open" AND c.assigned_type = "staff" AND c.assigned_id = ' . $p . 'staff.staffid))';
+            $sql = 'EXISTS (SELECT 1 FROM ' . $p . 'ams_assets x WHERE x.is_deleted = 0 AND x.assigned_type = "staff" AND x.assigned_id = ' . $p . 'staff.staffid)';
 
             return $value == '1' ? $sql : 'NOT ' . $sql;
         }),

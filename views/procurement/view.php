@@ -50,7 +50,7 @@ $canDecide  = staff_can('approve_po', 'ams_procurement') && $po->status === 'pen
                                 <table class="table table-bordered tw-mb-0">
                                     <thead>
                                         <tr>
-                                            <th>#</th><th><?= _l('ams_description'); ?></th><th><?= _l('ams_po_line_type'); ?></th>
+                                            <th>#</th><th><?= _l('ams_description'); ?></th>
                                             <th class="text-right"><?= _l('ams_quantity'); ?></th><th class="text-right"><?= _l('ams_po_received_qty'); ?></th>
                                             <th class="text-right"><?= _l('ams_unit_cost'); ?></th><th class="text-right"><?= _l('ams_po_amount'); ?></th>
                                         </tr>
@@ -59,15 +59,14 @@ $canDecide  = staff_can('approve_po', 'ams_procurement') && $po->status === 'pen
                                         <?php foreach ($po->lines as $i => $l) { ?>
                                         <tr>
                                             <td><?= $i + 1; ?></td>
-                                            <td><?= e($l['description']); ?><br><span class="text-muted tw-text-xs"><?= e($l['line_type'] === 'item' ? $l['sku'] : $l['category_name']); ?></span></td>
-                                            <td><?= _l('ams_po_type_' . $l['line_type']); ?></td>
+                                            <td><?= e($l['description']); ?><br><span class="text-muted tw-text-xs"><?= e($l['category_name']); ?></span></td>
                                             <td class="text-right"><?= ams_qty($l['qty']); ?></td>
                                             <td class="text-right <?= (float) $l['received_qty'] >= (float) $l['qty'] ? 'text-success' : ''; ?>"><?= ams_qty($l['received_qty']); ?></td>
                                             <td class="text-right"><?= e(app_format_money($l['unit_cost'], $cur)); ?></td>
                                             <td class="text-right"><?= e(app_format_money($l['qty'] * $l['unit_cost'], $cur)); ?></td>
                                         </tr>
                                         <?php } ?>
-                                        <tr><td colspan="6" class="text-right tw-font-semibold"><?= _l('ams_po_total'); ?></td><td class="text-right tw-font-semibold"><?= e(app_format_money($po->total, $cur)); ?></td></tr>
+                                        <tr><td colspan="5" class="text-right tw-font-semibold"><?= _l('ams_po_total'); ?></td><td class="text-right tw-font-semibold"><?= e(app_format_money($po->total, $cur)); ?></td></tr>
                                     </tbody>
                                 </table>
                             </div>
@@ -156,16 +155,12 @@ $canDecide  = staff_can('approve_po', 'ams_procurement') && $po->status === 'pen
                                 continue;
                             } ?>
                         <tr>
-                            <td><?= e($l['description']); ?><br><span class="text-muted tw-text-xs"><?= _l('ams_po_type_' . $l['line_type']); ?></span></td>
+                            <td><?= e($l['description']); ?><br><span class="text-muted tw-text-xs"><?= e($l['category_name']); ?></span></td>
                             <td><?= ams_qty($remaining); ?></td>
-                            <td><input type="number" class="form-control ams-po-receive-qty" name="qty[<?= (int) $l['id']; ?>]" value="" placeholder="0" min="0" max="<?= ams_qty($remaining); ?>" data-remaining="<?= ams_qty($remaining); ?>" step="<?= $l['line_type'] === 'asset' ? '1' : '0.01'; ?>"></td>
+                            <td><input type="number" class="form-control ams-po-receive-qty" name="qty[<?= (int) $l['id']; ?>]" value="" placeholder="0" min="0" max="<?= ams_qty($remaining); ?>" data-remaining="<?= ams_qty($remaining); ?>" step="1"></td>
                             <td>
-                                <?php if ($l['line_type'] === 'asset') { ?>
                                 <textarea class="form-control tw-mb-1" rows="2" name="serials[<?= (int) $l['id']; ?>]" placeholder="<?= _l('ams_po_serials_placeholder'); ?>"></textarea>
                                 <input type="number" class="form-control" name="warranty_months[<?= (int) $l['id']; ?>]" min="0" placeholder="<?= _l('ams_po_warranty_months'); ?>">
-                                <?php } else { ?>
-                                <span class="text-muted tw-text-sm"><?= _l('ams_po_stock_receipt'); ?></span>
-                                <?php } ?>
                             </td>
                         </tr>
                         <?php } ?>

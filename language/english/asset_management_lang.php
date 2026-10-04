@@ -253,127 +253,28 @@ $lang['ams_setting_warranty_days']    = 'Warn about warranties expiring within (
 $lang['ams_setting_max_upload']       = 'Max upload size per file (MB)';
 
 // ─── Inventory (Phase 3) ──────────────────────────────────────────────────
-$lang['ams_perm_accessories']       = 'AMS - Accessories';
-$lang['ams_perm_consumables']       = 'AMS - Consumables';
-$lang['ams_perm_stock']             = 'AMS - Stock Items';
-$lang['ams_perm_adjust']            = 'Receive / Transfer / Adjust stock';
-$lang['ams_perm_issue']             = 'Issue';
-$lang['ams_perm_checkout_checkin']  = 'Check out / Check in';
 
-$lang['ams_accessory']          = 'Accessory';
-$lang['ams_accessories']        = 'Accessories';
-$lang['ams_consumable']         = 'Consumable';
-$lang['ams_consumables']        = 'Consumables';
-$lang['ams_stock_item']         = 'Stock Item';
-$lang['ams_stock_items']        = 'Stock Items';
 $lang['ams_item']               = 'Item';
-$lang['ams_item_kind']          = 'Item Type';
-$lang['ams_custom_field_items'] = 'Inventory Items (Asset Management)';
 
-$lang['ams_item_details']         = 'Item Details';
-$lang['ams_sku']                  = 'SKU';
-$lang['ams_item_name']            = 'Item Name';
 $lang['ams_unit']                 = 'Unit';
-$lang['ams_pricing_and_stock']    = 'Pricing & Stock Control';
 $lang['ams_unit_cost']            = 'Unit Cost';
-$lang['ams_sale_price']           = 'Sale Price';
-$lang['ams_reorder_level']        = 'Reorder Level';
-$lang['ams_reorder_qty']          = 'Reorder Quantity';
-$lang['ams_reorder_help']         = 'When available stock falls to the reorder level, the item is flagged Low stock and the staff chosen in settings are notified. Leave 0 to not watch this item.';
-$lang['ams_default_location']     = 'Default Location';
-$lang['ams_is_sellable']          = 'Sellable (can be sold via HostBill)';
-$lang['ams_is_sellable_help'] = 'For your own reporting only; it has no effect on HostBill.';
-$lang['ams_opening_stock']        = 'Opening stock';
-$lang['ams_opening_stock_help']   = 'Optional: quantity you already have. It is recorded as a receipt in the stock ledger.';
 $lang['ams_quantity']             = 'Quantity';
 
-$lang['ams_on_hand']           = 'On Hand';
-$lang['ams_reserved']          = 'Reserved';
-$lang['ams_available']         = 'Available';
-$lang['ams_stock_value']       = 'Stock Value';
-$lang['ams_stock_state']       = 'Stock';
-$lang['ams_stock_state_ok']    = 'In stock';
-$lang['ams_stock_state_low']   = 'Low stock';
-$lang['ams_stock_state_out']   = 'Out of stock';
-$lang['ams_stock_by_location'] = 'Stock by Location';
-$lang['ams_no_stock_yet']      = 'No stock recorded yet.';
-$lang['ams_stock_levels']      = 'Stock Levels';
-$lang['ams_stock_movements']   = 'Stock Movements';
 
-$lang['ams_receive_stock']         = 'Receive Stock';
-$lang['ams_issue']                 = 'Issue';
-$lang['ams_issue_to']              = 'Issue to';
 $lang['ams_transfer']              = 'Transfer';
-$lang['ams_adjust']                = 'Adjust';
-$lang['ams_adjust_qty']            = 'Quantity change';
-$lang['ams_adjust_qty_help']       = 'Positive to add (e.g. found), negative to remove (e.g. -2 damaged).';
 $lang['ams_reason']                = 'Reason';
-$lang['ams_from_location']         = 'From Location';
-$lang['ams_to_location']           = 'To Location';
-$lang['ams_reference']             = 'Reference';
-$lang['ams_reference_placeholder'] = 'Invoice / challan no.';
-$lang['ams_update_item_cost']      = 'Use this unit cost as the item\'s cost from now on';
-$lang['ams_party']                 = 'To / From';
-$lang['ams_issued_to_staff']       = 'Issued / checked out to staff';
-$lang['ams_movement_type']         = 'Movement';
 
-$lang['ams_mv_receive']      = 'Received';
-$lang['ams_mv_issue']        = 'Issued';
-$lang['ams_mv_checkout']     = 'Checked out';
-$lang['ams_mv_return']       = 'Returned';
-$lang['ams_mv_transfer_in']  = 'Transfer in';
-$lang['ams_mv_transfer_out'] = 'Transfer out';
-$lang['ams_mv_adjust']       = 'Adjustment';
 
-$lang['ams_reason_correction'] = 'Count correction';
-$lang['ams_reason_found']      = 'Found';
-$lang['ams_reason_damaged']    = 'Damaged';
-$lang['ams_reason_lost']       = 'Lost';
-$lang['ams_reason_expired']    = 'Expired';
-$lang['ams_reason_other']      = 'Other';
 
-$lang['ams_accessory_checkouts'] = 'Accessory Check-outs';
-$lang['ams_my_checkouts']        = 'My Check-outs';
-$lang['ams_expected_return']     = 'Expected Return';
 $lang['ams_returned']            = 'Returned';
-$lang['ams_outstanding']         = 'Outstanding';
-$lang['ams_return_qty']          = 'Quantity to return';
 $lang['ams_overdue']             = 'Overdue';
-$lang['ams_checkout_open']       = 'Out';
-$lang['ams_checkout_closed']     = 'Returned';
 
-$lang['ams_inventory_value']  = 'Inventory Value';
-$lang['ams_low_stock']        = 'Low Stock';
-$lang['ams_out_of_stock']     = 'Out of Stock';
-$lang['ams_accessories_out']  = 'Accessories Out';
-$lang['ams_stock_alerts']     = 'Stock Alerts';
-$lang['ams_no_stock_alerts']  = 'No items below their reorder level.';
 
-$lang['ams_notify_low_stock']    = 'Low stock: %s - %s available';
-$lang['ams_notify_out_of_stock'] = 'Out of stock: %s - %s available';
 
-$lang['ams_settings_inventory']          = 'Inventory';
-$lang['ams_setting_sku_prefix']          = 'SKU Prefix (auto-generated SKUs)';
-$lang['ams_setting_notify_staff']        = 'Notify about low / out-of-stock items';
-$lang['ams_setting_notify_staff_help']   = 'These staff members get a Perfex notification when an item with a reorder level becomes low or runs out.';
-$lang['ams_setting_block_negative']      = 'Block taking more stock than is available';
-$lang['ams_setting_block_negative_help'] = 'Recommended. When off, issues/check-outs may drive stock below zero.';
 
-$lang['ams_received_success']           = 'Received %s';
-$lang['ams_issued_success']             = 'Issued %s to %s';
-$lang['ams_returned_success']           = '%s returned';
-$lang['ams_transferred_success']        = 'Transferred %s';
-$lang['ams_adjusted_success']           = 'Stock adjusted';
 $lang['ams_qty_positive']               = 'Enter a quantity greater than zero.';
-$lang['ams_adjust_qty_nonzero']         = 'Enter a positive or negative quantity (not zero).';
 $lang['ams_negative_not_allowed']       = 'Negative values are not allowed.';
-$lang['ams_insufficient_stock']         = 'Not enough stock: only %s available at %s.';
-$lang['ams_return_qty_invalid']         = 'Return quantity must be between 0 and %s.';
-$lang['ams_transfer_locations_invalid'] = 'Choose two different locations.';
 $lang['ams_select_recipient']           = 'Select the staff member or department.';
-$lang['ams_sku_exists']                 = 'SKU %s is already in use.';
-$lang['ams_item_has_movements']         = 'This item has stock history and cannot be deleted. Mark it inactive instead.';
-$lang['ams_item_inactive']              = 'This item is inactive.';
 
 // ─── HostBill (Phase 4) ───────────────────────────────────────────────────
 $lang['ams_perm_hostbill']  = 'AMS - HostBill Integration';
@@ -381,10 +282,6 @@ $lang['ams_perm_hb_edit'] = 'Edit low-stock levels';
 $lang['ams_perm_hb_sync'] = 'Refresh now';
 
 
-$lang['ams_mv_sale']        = 'Sold (HostBill)';
-$lang['ams_mv_sale_return'] = 'Returned (HostBill)';
-$lang['ams_mv_reserve']     = 'Reserved (HostBill)';
-$lang['ams_mv_release']     = 'Reservation released';
 
 // Settings
 $lang['ams_hb_settings_intro'] = 'HostBill stays the owner of its product stock: Perfex only reads it (read-only API calls), shows it on Assets → HostBill Inventory and sends low / out-of-stock alerts. Nothing is written to HostBill.';
@@ -402,17 +299,6 @@ $lang['ams_hb_test_connection']      = 'Test connection';
 $lang['ams_hb_api_help'] = 'Create the API ID / key in HostBill → Settings → Security → API access (read access to order pages and products is enough), and allow this CRM server\'s IP address there. The key is stored encrypted.';
 $lang['ams_hb_sync_enabled']         = 'Sync orders automatically (Perfex cron)';
 $lang['ams_hb_sync_interval']        = 'Sync every (minutes)';
-$lang['ams_hb_lookback_days']        = 'Check orders from the last (days)';
-$lang['ams_hb_max_pages']            = 'Max order pages per sync';
-$lang['ams_hb_deduct_on']            = 'Deduct stock when';
-$lang['ams_hb_reserve_on_pending']   = 'Reserve stock while an order is waiting';
-$lang['ams_hb_release_on_refund']    = 'Treat a Refunded invoice like a cancellation';
-$lang['ams_hb_restock_on_cancel']    = 'Return stock when a deducted order is cancelled';
-$lang['ams_hb_push_enabled']         = 'Update HostBill product stock';
-$lang['ams_hb_push_immediately']     = 'Push immediately after each stock change';
-$lang['ams_hb_stock_buffer']         = 'Safety buffer (units)';
-$lang['ams_hb_webhook_enabled']      = 'Accept webhook calls';
-$lang['ams_hb_webhook_ips']          = 'Allowed webhook IPs (comma separated, empty = any)';
 $lang['ams_hb_alert_staff'] = 'Staff who get HostBill alerts';
 $lang['ams_hb_log_retention_days']   = 'Keep sync log (days)';
 
@@ -429,7 +315,6 @@ $lang['ams_hb_products']          = 'HostBill Products';
 $lang['ams_hb_product']           = 'HostBill Product';
 $lang['ams_hb_sync_log'] = 'Sync log';
 $lang['ams_hb_order_lines']       = 'Order Lines';
-$lang['ams_hb_state_help']        = 'Reserved = held for this order; Sold = deducted from stock; Released / Returned = given back; Short = not enough stock (retried on every sync); Not mapped = the HostBill product is not linked to a Perfex item.';
 $lang['ams_hb_hostbill_qty'] = 'Quantity';
 $lang['ams_hb_direction']         = 'Type';
 $lang['ams_hb_api_call']          = 'API Call';
@@ -456,7 +341,7 @@ $lang['ams_my_assets']          = 'My Assets';
 $lang['ams_my_requests']        = 'My Requests';
 $lang['ams_assets_by_staff']    = 'Assets by Staff';
 $lang['ams_staff_profile']      = 'Staff profile';
-$lang['ams_staff_assets_button'] = 'Assets held: %s assets, %s accessories';
+$lang['ams_staff_assets_button'] = 'Assets held: %s';
 $lang['ams_holds_items']        = 'Holds items';
 $lang['ams_open_requests']      = 'Open Requests';
 $lang['ams_acc_pending_short']  = 'To Sign';
@@ -501,9 +386,7 @@ $lang['ams_req_report_issue']    = 'Report an Issue';
 $lang['ams_req_no']              = 'Request #';
 $lang['ams_req_type']            = 'Type';
 $lang['ams_req_type_asset']      = 'New asset (laptop, monitor, ...)';
-$lang['ams_req_type_accessory']  = 'Accessory';
-$lang['ams_req_type_consumable'] = 'Consumable / stock item';
-$lang['ams_req_type_issue'] = 'Issue with an asset or accessory I hold';
+$lang['ams_req_type_issue'] = 'Issue with an asset I hold';
 $lang['ams_req_subject']         = 'Subject';
 $lang['ams_req_description']     = 'Details / reason';
 $lang['ams_requester']           = 'Requested By';
@@ -541,7 +424,7 @@ $lang['ams_req_now']             = 'Request is now: %s';
 $lang['ams_req_not_approved']    = 'Only approved requests can be completed.';
 $lang['ams_req_fulfilled_msg']   = 'Request %s completed.';
 $lang['ams_req_cancelled_msg']   = 'Request cancelled.';
-$lang['ams_req_issue_own_asset'] = 'Choose an asset or accessory that you currently hold.';
+$lang['ams_req_issue_own_asset'] = 'Choose an asset that you currently hold.';
 
 // Department approvers
 $lang['ams_department_approvers']      = 'Department Approvers';
@@ -553,7 +436,7 @@ $lang['ams_waiting_approval'] = 'Waiting';
 
 // Settings
 $lang['ams_settings_people']                 = 'Staff, Acceptance & Requests';
-$lang['ams_setting_acceptance_mode']         = 'Signed receipt when an asset/accessory is checked out to staff';
+$lang['ams_setting_acceptance_mode']         = 'Signed receipt when an asset is checked out to staff';
 $lang['ams_acceptance_mode_always']          = 'Always';
 $lang['ams_acceptance_mode_category']        = 'Per category (Setup → Categories)';
 $lang['ams_acceptance_mode_never']           = 'Never';
@@ -568,7 +451,7 @@ $lang['ams_setting_block_deactivation']      = 'Block deactivating staff who sti
 $lang['ams_setting_block_deactivation_help'] = 'If off, a warning is shown instead.';
 
 // Staff lifecycle
-$lang['ams_staff_holds_items']           = '%s still holds %s asset(s) and %s accessory item(s).';
+$lang['ams_staff_holds_items']           = '%s still holds %s asset(s).';
 $lang['ams_staff_deactivation_blocked']  = 'Deactivation was blocked - check the items in first (Assets → Assets by Staff).';
 $lang['ams_transferred_on_delete']       = 'Transferred from %s to %s when the staff member was deleted';
 
@@ -710,15 +593,12 @@ $lang['ams_po_order_date']      = 'Order date';
 $lang['ams_po_expected_date']   = 'Expected delivery';
 $lang['ams_po_deliver_to']      = 'Deliver to';
 $lang['ams_po_lines']           = 'Lines';
-$lang['ams_po_line_type']       = 'Type';
-$lang['ams_po_type_asset']      = 'Asset (one per unit)';
-$lang['ams_po_type_item']       = 'Stock item';
-$lang['ams_po_line_what']       = 'Category / brand / model or stock item';
+$lang['ams_po_line_what']       = 'Category / brand / model';
 $lang['ams_po_amount']          = 'Amount';
 $lang['ams_po_total']           = 'Total';
 $lang['ams_po_terms']           = 'Terms';
 $lang['ams_po_add_line']        = 'Add line';
-$lang['ams_po_lines_help']      = 'Asset lines create one asset per unit when received (serials, warranty). Stock item lines add quantity to inventory.';
+$lang['ams_po_lines_help']      = 'Each line creates one asset per unit when received (serials, warranty).';
 $lang['ams_po_save_draft']      = 'Save draft';
 $lang['ams_po_from_request']    = 'Created from request %s.';
 $lang['ams_po_create_from_request'] = 'Create purchase order';
@@ -742,7 +622,6 @@ $lang['ams_po_receive_now']      = 'Receive now';
 $lang['ams_po_serials_warranty'] = 'Serial numbers / warranty';
 $lang['ams_po_serials_placeholder'] = 'One serial per line (optional)';
 $lang['ams_po_warranty_months']  = 'Warranty (months)';
-$lang['ams_po_stock_receipt']    = 'Added to stock at the location';
 $lang['ams_po_receipt_date']     = 'Received on';
 $lang['ams_po_receive_help']     = 'Asset lines: one asset per unit is created "In Store" at the location, with supplier, PO number, invoice, cost and warranty filled in.';
 $lang['ams_po_receipts']         = 'Goods Receipts';
@@ -771,7 +650,6 @@ $lang['ams_po_cannot_delete']    = 'Only draft, rejected or cancelled purchase o
 $lang['ams_po_no_lines']         = 'Add at least one line.';
 $lang['ams_po_line_invalid']     = 'Line %s: enter a description, a quantity above 0 and a cost.';
 $lang['ams_po_asset_qty_whole']  = 'Line %s: asset quantities must be whole numbers.';
-$lang['ams_po_item_required']    = 'Line %s: choose the stock item.';
 $lang['ams_po_category_required'] = 'Line %s: choose the asset category.';
 $lang['ams_po_receive_too_much'] = '%s: only %s left to receive.';
 $lang['ams_po_serial_count']     = '%s: %s unit(s) but %s serial number(s).';
@@ -986,7 +864,6 @@ $lang['ams_reports']                    = 'Reports';
 $lang['ams_reports_intro']              = 'Every report is a standard Perfex table: search, sort, filter, save filters and export to Excel, CSV, PDF or print.';
 $lang['ams_reports_group_assets']       = 'Assets';
 $lang['ams_reports_group_finance']      = 'Finance';
-$lang['ams_reports_group_stock']        = 'Stock & sales';
 $lang['ams_reports_group_operations']   = 'Operations';
 $lang['ams_report_register']            = 'Asset Register';
 $lang['ams_report_register_desc']       = 'All assets with status, holder, department, location, cost and warranty.';
@@ -1002,8 +879,6 @@ $lang['ams_report_depreciation_desc']   = 'Depreciation expense for the coming m
 $lang['ams_report_maintenance_cost']    = 'Maintenance Cost';
 $lang['ams_report_maintenance_cost_desc'] = 'Completed maintenance cost and downtime by category, supplier, type or asset.';
 $lang['ams_report_disposals_desc']      = 'Disposed assets with proceeds, book value and gain / loss.';
-$lang['ams_report_levels_desc']         = 'Stock on hand, reserved and available per item and location, with value.';
-$lang['ams_report_movements_desc']      = 'Every stock receipt, issue, transfer, adjustment and sale.';
 $lang['ams_report_hb_desc'] = 'HostBill product stock with low / out-of-stock status.';
 $lang['ams_report_audits_desc']         = 'Audit campaigns with found, misplaced and missing assets.';
 $lang['ams_report_maintenance_desc']    = 'All maintenance jobs, open and overdue.';
@@ -1027,8 +902,7 @@ $lang['ams_date_to']                    = 'To';
 $lang['ams_apply']                      = 'Apply';
 
 $lang['ams_import']                     = 'Import';
-$lang['ams_import_type_items']          = 'Stock items (accessories, consumables, stock)';
-$lang['ams_import_intro']               = 'Import assets, stock items or suppliers from a CSV or Excel (.xlsx) file. Nothing is saved until you have checked the preview.';
+$lang['ams_import_intro']               = 'Import assets or suppliers from a CSV or Excel (.xlsx) file. Nothing is saved until you have checked the preview.';
 $lang['ams_import_step1']               = 'Upload the file (first row = column names, up to %s rows, %s MB).';
 $lang['ams_import_step2']               = 'Match the columns to the fields (matched automatically where the names are clear).';
 $lang['ams_import_step3']               = 'Preview: every row is checked with the same rules as the forms.';
@@ -1056,12 +930,10 @@ $lang['ams_import_options']             = 'Options';
 $lang['ams_import_existing']            = 'Records that already exist';
 $lang['ams_import_mode_skip']           = 'Skip them';
 $lang['ams_import_mode_update_assets']  = 'Update them (matched by asset tag)';
-$lang['ams_import_mode_update_items']   = 'Update them (matched by SKU)';
 $lang['ams_import_mode_update_suppliers'] = 'Update them (matched by name)';
 $lang['ams_import_date_format']         = 'Date format in the file';
 $lang['ams_import_date_help']           = 'YYYY-MM-DD dates and real Excel date cells always work.';
 $lang['ams_import_create_missing']      = 'Create missing categories, brands, models, locations and suppliers';
-$lang['ams_import_default_kind']        = 'Item type when the file has no type column';
 $lang['ams_import_notify']              = 'Notify staff of assets checked out to them (acceptance request + email)';
 $lang['ams_import_preview']             = 'Preview';
 $lang['ams_import_run']                 = 'Import %s rows';
@@ -1072,7 +944,7 @@ $lang['ams_import_preview_title']       = 'Preview (nothing saved yet)';
 $lang['ams_import_result_title']        = 'Import finished';
 $lang['ams_import_preview_help']        = 'Rows with errors are skipped when you import. Fix them in the file and import it again (existing rows will then be skipped or updated).';
 $lang['ams_import_row']                 = 'Row';
-$lang['ams_import_reference']           = 'Tag / SKU / name';
+$lang['ams_import_reference']           = 'Tag / name';
 $lang['ams_import_message']             = 'Message';
 $lang['ams_import_status_create']       = 'New';
 $lang['ams_import_status_update']       = 'Update';
@@ -1089,9 +961,7 @@ $lang['ams_import_invalid_value']       = 'Invalid %s: "%s".';
 $lang['ams_import_invalid_date']        = 'Invalid date in %s: "%s".';
 $lang['ams_import_invalid_number']      = 'Invalid number in %s: "%s".';
 $lang['ams_import_will_create']         = 'New %s "%s" will be created.';
-$lang['ams_import_qty_ignored']         = 'Quantity ignored for existing items (use Receive / Adjust).';
 $lang['ams_import_assigned_email']      = 'Assigned to (staff email)';
-$lang['ams_import_opening_location']    = 'Opening stock location';
 $lang['ams_import_history_note']        = 'Imported from file';
 
 // ─── HostBill inventory (read-only) ───────────────────────────────────────
@@ -1147,11 +1017,6 @@ $lang['ams_hb_alert_sync_fail'] = 'Refresh failure alerts';
 $lang['ams_hb_alert_sync_fail_help'] = 'One alert when HostBill cannot be read, and one when it works again.';
 $lang['ams_hb_alert_email'] = 'Also send email';
 $lang['ams_hb_alert_email_help'] = 'Bell notifications are always sent; this adds the "Low / out-of-stock alert" and "System alert" email templates.';
-$lang['ams_hb_alert_recipients'] = 'Send alerts to';
-$lang['ams_hb_recipients_own'] = 'The staff chosen here';
-$lang['ams_hb_recipients_stock'] = 'The same staff as Perfex stock alerts';
-$lang['ams_setting_sellable_enabled'] = 'Use the "Sellable" flag on stock items';
-$lang['ams_setting_sellable_enabled_help'] = 'Shows a "Sellable" tick box on stock items (form, item page, filter, import) for your own use. It has no link to HostBill.';
 
 // ─── Legacy import (Phase 2) ──────────────────────────────────────────────
 $lang['ams_legacy_import']               = 'Legacy Data Import';
@@ -1226,7 +1091,6 @@ $lang['ams_setting_invalid'] = 'Not saved: the value of %s is not valid.';
 $lang['ams_hb_url_changed_key_required'] = 'The HostBill URL was not changed: enter the API key again when changing the URL (the saved key is only sent to the saved address).';
 $lang['ams_scan_confirm_record'] = 'Record %s in audit %s?';
 $lang['ams_scan_record'] = 'Record in audit';
-$lang['ams_req_qty_above_requested'] = 'More than was requested (%s).';
 $lang['ams_import_already_running'] = 'This file is already being imported (or was imported). Check the results before importing again.';
 $lang['ams_import_file_too_large'] = 'The spreadsheet is too large once unpacked. Split it into smaller files.';
 $lang['ams_hb_refresh_running'] = 'A HostBill refresh is already running. Try again in a moment.';
@@ -1262,21 +1126,8 @@ $lang['ams_setup_changelog_help'] = 'Who created, changed or deleted categories,
 $lang['ams_setup_record_type'] = 'Record type';
 $lang['ams_by'] = 'By';
 $lang['ams_notify_request_cancelled'] = 'Request %s was cancelled by %s';
-$lang['ams_import_notify_items'] = 'Send low-stock alerts for imported opening stock';
 $lang['ams_icon_none'] = 'No icon';
 $lang['ams_req_no_available_assets_long'] = 'No asset can be given right now: an asset must be In Store (a deployable status), not checked out and not deleted. Add the asset with status In Store, or buy it with a purchase order from this request - then reload this page.';
-$lang['ams_req_no_available_items_long'] = 'No active item of this kind exists yet. Create the item (Accessories / Consumables / Stock Items) and receive stock, or buy it with a purchase order from this request.';
-$lang['ams_item_checked_out_success'] = 'Checked out to %s';
 
-// ─── Issue reports on accessories ────────────────────────────────────────
-$lang['ams_req_issue_item'] = 'Asset or accessory';
-$lang['ams_req_issue_held'] = '%s held';
-$lang['ams_req_issue_held_since'] = 'Held since';
-$lang['ams_req_issue_qty_above_held'] = 'You hold only %s of this accessory.';
-$lang['ams_req_issue_no_longer_held'] = 'The requester no longer holds that many of this accessory; untick "write off" or check the check-out first.';
-$lang['ams_req_issue_returned_faulty'] = 'Returned faulty (%s)';
-$lang['ams_req_issue_replacement'] = 'Replacement for %s';
-$lang['ams_req_issue_resolve_help'] = 'Faulty accessory (%s unit/s). Choose what to do; leave both unticked if it was fixed and nothing changes hands.';
-$lang['ams_req_issue_write_off'] = 'Take back the %s faulty unit/s and write them off as damaged';
-$lang['ams_req_issue_replace'] = 'Give %s working unit/s from stock as replacement';
-$lang['ams_req_issue_replace_from'] = 'Replacement from location';
+// ─── Issue reports ─────────────────────────────────────────────────────────
+$lang['ams_req_issue_item'] = 'Asset';

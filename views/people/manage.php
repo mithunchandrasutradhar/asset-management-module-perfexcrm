@@ -20,7 +20,7 @@
                 <div class="panel_s">
                     <div class="panel-body panel-table-full">
                         <?php render_datatable([
-                            _l('ams_assign_type_staff'), _l('ams_department'), _l('ams_assets'), _l('ams_accessories'),
+                            _l('ams_assign_type_staff'), _l('ams_department'), _l('ams_assets'),
                             _l('ams_overdue'), _l('ams_acc_pending_short'), _l('ams_open_requests'), _l('ams_active'),
                         ], 'ams-people', [], [
                             'data-last-order-identifier' => 'ams-people',

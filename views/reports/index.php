@@ -17,16 +17,12 @@ $groups    = [
         [true, 'asset_management/reports/maintenance_cost', 'fa-solid fa-screwdriver-wrench', 'ams_report_maintenance_cost', 'ams_report_maintenance_cost_desc'],
         [true, 'asset_management/reports/disposals', 'fa-solid fa-box-archive', 'ams_disposal_register', 'ams_report_disposals_desc'],
     ],
-    'ams_reports_group_stock' => [
-        [(bool) ams_item_viewable_kinds(), 'asset_management/inventory/levels', 'fa-solid fa-boxes-stacked', 'ams_stock_levels', 'ams_report_levels_desc'],
-        [(bool) ams_item_viewable_kinds(), 'asset_management/inventory/movements', 'fa-solid fa-right-left', 'ams_stock_movements', 'ams_report_movements_desc'],
-        [staff_can('view', 'ams_hostbill'), 'asset_management/hostbill', 'fa-solid fa-cart-shopping', 'ams_hb_inventory', 'ams_report_hb_desc'],
-    ],
     'ams_reports_group_operations' => [
         [staff_can('view', 'ams_audits'), 'asset_management/audits', 'fa-solid fa-clipboard-check', 'ams_audits', 'ams_report_audits_desc'],
         [staff_can('view', 'ams_maintenance'), 'asset_management/maintenance', 'fa-solid fa-wrench', 'ams_maintenance', 'ams_report_maintenance_desc'],
         [staff_can('view', 'ams_licenses'), 'asset_management/licenses', 'fa-solid fa-key', 'ams_licenses', 'ams_report_licenses_desc'],
         [staff_can('view', 'ams_procurement'), 'asset_management/procurement', 'fa-solid fa-file-invoice', 'ams_purchase_orders', 'ams_report_pos_desc'],
+        [staff_can('view', 'ams_hostbill'), 'asset_management/hostbill', 'fa-solid fa-cart-shopping', 'ams_hb_inventory', 'ams_report_hb_desc'],
     ],
 ];
 ?>

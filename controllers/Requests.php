@@ -60,17 +60,8 @@ class Requests extends AdminController
         $data['title']      = $req->request_no . ' - ' . $req->subject;
         $data['req']        = $req;
         $data['can_decide'] = $this->ams_people_model->can_decide($req);
-        $data['locations']  = ams_location_options(true);
-        // Issue about an accessory: the check-out it is about (shown, and used when resolving).
-        $data['issue_checkout'] = null;
-        if ($req->type === 'issue' && ! empty($req->checkout_id)) {
-            $this->load->model(AMS_MODULE_NAME . '/ams_inventory_model');
-            $data['issue_checkout'] = $this->ams_inventory_model->get_checkout($req->checkout_id);
-        }
-
-        // Fulfilment choices: deployable, unassigned assets (matching category first) or stock items.
+        // Fulfilment choices: deployable, unassigned assets (matching category first).
         $data['assets'] = [];
-        $data['items']  = [];
         if ($req->status === 'approved') {
             if ($req->type === 'asset') {
                 $data['assets'] = $this->db->query('SELECT a.id, CONCAT(a.asset_tag, " - ", a.name, IF(l.name IS NULL, "", CONCAT(" (", l.name, ")"))) name
@@ -80,10 +71,6 @@ class Requests extends AdminController
                     LEFT JOIN ' . db_prefix() . 'ams_categories c ON c.id = a.category_id
                     WHERE a.is_deleted = 0 AND a.assigned_type IS NULL
                     ORDER BY (a.category_id = ? OR c.parent_id = ?) DESC, a.asset_tag', [(int) $req->category_id, (int) $req->category_id])->result_array();
-            } elseif (in_array($req->type, ['accessory', 'consumable'])) {
-                $kinds         = $req->type === 'accessory' ? ['accessory'] : ['consumable', 'stock'];
-                $data['items'] = $this->db->select('id, CONCAT(sku, " - ", name) name', false)->where('active', 1)->where_in('kind', $kinds)
-                    ->order_by('(id = ' . (int) $req->item_id . ')', 'DESC', false)->order_by('name')->get(db_prefix() . 'ams_items')->result_array();
             }
         }
 

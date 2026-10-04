@@ -76,7 +76,7 @@ class Import extends AdminController
         $headers = array_shift($rows);
         $fields  = $this->ams_import_model->fields($job['type']);
         $map     = $this->ams_import_model->auto_map($job['type'], $headers);
-        $options = ['mode' => 'skip', 'date_format' => 'd/m/Y', 'create_missing' => 0, 'default_kind' => 'stock', 'notify' => 0];
+        $options = ['mode' => 'skip', 'date_format' => 'd/m/Y', 'create_missing' => 0, 'notify' => 0];
         $result  = null;
         $action  = $this->input->post('action');
 
@@ -92,16 +92,15 @@ class Import extends AdminController
                 'mode'           => $this->input->post('mode') === 'update' ? 'update' : 'skip',
                 'date_format'    => (string) $this->input->post('date_format'),
                 'create_missing' => $this->input->post('create_missing') ? 1 : 0,
-                'default_kind'   => (string) $this->input->post('default_kind'),
                 'notify'         => $this->input->post('notify') ? 1 : 0,
             ];
 
             // In update mode existing records keep unmapped values, so only the match column is required
             // (rows that turn out to be new still fail validation without a name / category).
-            $matchKey = ['assets' => 'asset_tag', 'items' => 'sku', 'suppliers' => 'name'][$job['type']];
+            $matchKey = ['assets' => 'asset_tag', 'suppliers' => 'name'][$job['type']];
             $missing  = $options['mode'] === 'update'
                 ? (isset($map[$matchKey]) ? [] : [$matchKey])
-                : array_filter(array_keys($fields), fn ($k) => $fields[$k]['required'] && ! isset($map[$k]) && ! ($job['type'] === 'items' && $k === 'kind'));
+                : array_filter(array_keys($fields), fn ($k) => $fields[$k]['required'] && ! isset($map[$k]));
             if ($missing) {
                 set_alert('warning', _l('ams_import_map_required', implode(', ', array_map(fn ($k) => _l($fields[$k]['label']), $missing))));
             } else {
@@ -170,7 +169,6 @@ class Import extends AdminController
         }
         $examples = [
             'assets'    => ['asset_tag' => '', 'name' => 'Dell Latitude 5440', 'serial_no' => '5CG1234XYZ', 'category' => 'Laptops', 'brand' => 'Dell', 'status' => 'In Store', 'location' => 'Head Office Store', 'purchase_date' => date('Y-m-d'), 'purchase_cost' => '85000', 'warranty_end' => date('Y-m-d', strtotime('+3 years'))],
-            'items'     => ['sku' => '', 'name' => 'USB Headset', 'kind' => 'stock', 'category' => 'Headphones', 'unit' => 'pcs', 'cost' => '1200', 'sale_price' => '1800', 'reorder_level' => '5', 'is_sellable' => 'yes', 'opening_qty' => '20', 'opening_location' => 'Main Store'],
             'suppliers' => ['name' => 'Tech Supplies Ltd', 'contact_person' => 'Sam Seller', 'phone' => '+8801700000000', 'email' => 'sales@example.com'],
         ];
         $keys = array_keys($this->ams_import_model->fields($type));

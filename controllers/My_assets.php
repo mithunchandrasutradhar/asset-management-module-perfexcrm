@@ -27,13 +27,7 @@ class My_assets extends AdminController
         $data['holdings']   = $this->ams_people_model->holdings($me);
         $data['my_assets']  = $this->db->select('id, asset_tag, name')->where('assigned_type', 'staff')->where('assigned_id', $me)
             ->where('is_deleted', 0)->order_by('asset_tag')->get(db_prefix() . 'ams_assets')->result_array();
-        // Accessories I hold (open check-outs), for "report an issue".
-        $data['my_checkouts'] = $this->db->query('SELECT co.id, i.sku, i.name, i.unit, co.qty - co.returned_qty outstanding
-            FROM ' . db_prefix() . 'ams_item_checkouts co JOIN ' . db_prefix() . 'ams_items i ON i.id = co.item_id
-            WHERE co.status = "open" AND co.assigned_type = "staff" AND co.assigned_id = ? ORDER BY i.name', [$me])->result_array();
         $data['categories'] = ams_category_options(true);
-        $data['items']      = $this->db->select('id, kind, CONCAT(sku, " - ", name) name', false)->where('active', 1)
-            ->where_in('kind', ['accessory', 'consumable', 'stock'])->order_by('name')->get(db_prefix() . 'ams_items')->result_array();
 
         $this->load->view(AMS_MODULE_NAME . '/my_assets/index', $data);
     }
@@ -46,11 +40,6 @@ class My_assets extends AdminController
         App_table::find('ams_assets')->output(['status_id' => 0, 'category_id' => 0, 'holder_staff' => (int) get_staff_user_id()]);
     }
 
-    public function checkouts_table()
-    {
-        $this->ajax_guard();
-        App_table::find('ams_checkouts')->output(['item_id' => 0, 'holder_staff' => (int) get_staff_user_id()]);
-    }
 
     public function acceptances_table()
     {
@@ -134,9 +123,9 @@ class My_assets extends AdminController
         }
     }
 
-    /** Someone else's sign-off: assets need asset view, accessories need accessory view. */
+    /** Someone else's sign-off needs global asset view. */
     private function can_see_acceptance($acc)
     {
-        return $acc->rel_type === 'accessory' ? ams_item_can('view', 'accessory') : staff_can('view', 'ams_assets');
+        return staff_can('view', 'ams_assets');
     }
 }

@@ -102,13 +102,10 @@ $ready  = $counts && $action === 'preview' && ($counts['create'] + $counts['upda
                         </div>
                         <?php } ?>
                         <?php } ?>
-                        <?php if ($type === 'items') { ?>
-                        <?= render_select('default_kind', ams_item_kind_options(), ['id', 'name'], 'ams_import_default_kind', $options['default_kind'], [], [], '', '', false); ?>
-                        <?php } ?>
-                        <?php if (in_array($type, ['assets', 'items'], true)) { ?>
+                        <?php if ($type === 'assets') { ?>
                         <div class="checkbox checkbox-primary">
                             <input type="checkbox" name="notify" id="ams_notify" value="1" <?= $options['notify'] ? 'checked' : ''; ?>>
-                            <label for="ams_notify"><?= _l($type === 'items' ? 'ams_import_notify_items' : 'ams_import_notify'); ?></label>
+                            <label for="ams_notify"><?= _l('ams_import_notify'); ?></label>
                         </div>
                         <?php } ?>
                         <hr />

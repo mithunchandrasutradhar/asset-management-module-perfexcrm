@@ -11,10 +11,9 @@ $dt     = fn ($f, $d = '') => array_key_exists($f, $posted) ? $posted[$f] : (iss
 $lines = $posted['lines'] ?? ($po ? $po->lines : []);
 if (! $lines && $request) {
     $lines = [[
-        'line_type'   => $request->type === 'asset' ? 'asset' : 'item',
+        'line_type'   => 'asset',
         'description' => $request->subject,
         'category_id' => $request->category_id,
-        'item_id'     => $request->item_id,
         'qty'         => $request->qty,
         'unit_cost'   => '',
     ]];
@@ -26,7 +25,7 @@ if (! $lines) {
 $opts = function ($rows, $selected) {
     $html = '<option value=""></option>';
     foreach ($rows as $r) {
-        $html .= '<option value="' . (int) $r['id'] . '"' . ((string) $r['id'] === (string) $selected ? ' selected' : '') . (isset($r['cost']) ? ' data-cost="' . e($r['cost']) . '"' : '') . '>' . e($r['name']) . '</option>';
+        $html .= '<option value="' . (int) $r['id'] . '"' . ((string) $r['id'] === (string) $selected ? ' selected' : '') . '>' . e($r['name']) . '</option>';
     }
 
     return $html;
@@ -56,9 +55,8 @@ $opts = function ($rows, $selected) {
                             <table class="table table-bordered" id="ams-po-lines">
                                 <thead>
                                     <tr>
-                                        <th style="width:11%"><?= _l('ams_po_line_type'); ?></th>
-                                        <th style="width:25%"><?= _l('ams_description'); ?></th>
-                                        <th style="width:30%"><?= _l('ams_po_line_what'); ?></th>
+                                        <th style="width:30%"><?= _l('ams_description'); ?></th>
+                                        <th style="width:36%"><?= _l('ams_po_line_what'); ?></th>
                                         <th style="width:10%"><?= _l('ams_quantity'); ?></th>
                                         <th style="width:12%"><?= _l('ams_unit_cost'); ?></th>
                                         <th style="width:9%" class="text-right"><?= _l('ams_po_amount'); ?></th>
@@ -66,29 +64,19 @@ $opts = function ($rows, $selected) {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <?php foreach (array_values($lines) as $i => $l) {
-                                        $type = ($l['line_type'] ?? 'asset') === 'item' ? 'item' : 'asset'; ?>
+                                    <?php foreach (array_values($lines) as $i => $l) { ?>
                                     <tr class="ams-po-line">
+                                        <td><input type="hidden" name="lines[<?= $i; ?>][line_type]" value="asset"><input type="text" name="lines[<?= $i; ?>][description]" class="form-control" value="<?= e($l['description'] ?? ''); ?>"></td>
                                         <td>
-                                            <select name="lines[<?= $i; ?>][line_type]" class="form-control ams-line-type">
-                                                <option value="asset"<?= $type === 'asset' ? ' selected' : ''; ?>><?= _l('ams_po_type_asset'); ?></option>
-                                                <option value="item"<?= $type === 'item' ? ' selected' : ''; ?>><?= _l('ams_po_type_item'); ?></option>
-                                            </select>
-                                        </td>
-                                        <td><input type="text" name="lines[<?= $i; ?>][description]" class="form-control" value="<?= e($l['description'] ?? ''); ?>"></td>
-                                        <td>
-                                            <div class="ams-line-asset<?= $type === 'asset' ? '' : ' hide'; ?>">
+                                            <div class="ams-line-asset">
                                                 <select name="lines[<?= $i; ?>][category_id]" class="form-control tw-mb-1" title="<?= _l('ams_category'); ?>"><?= $opts($categories, $l['category_id'] ?? ''); ?></select>
                                                 <div class="tw-flex tw-gap-1">
                                                     <select name="lines[<?= $i; ?>][brand_id]" class="form-control" title="<?= _l('ams_brand'); ?>"><?= $opts($brands, $l['brand_id'] ?? ''); ?></select>
                                                     <select name="lines[<?= $i; ?>][model_id]" class="form-control" title="<?= _l('ams_model'); ?>"><?= $opts($models, $l['model_id'] ?? ''); ?></select>
                                                 </div>
                                             </div>
-                                            <div class="ams-line-item<?= $type === 'item' ? '' : ' hide'; ?>">
-                                                <select name="lines[<?= $i; ?>][item_id]" class="form-control ams-line-itemsel"><?= $opts($items, $l['item_id'] ?? ''); ?></select>
-                                            </div>
                                         </td>
-                                        <td><input type="number" step="0.01" min="0" name="lines[<?= $i; ?>][qty]" class="form-control ams-line-qty" value="<?= e(isset($l['qty']) && $l['qty'] !== '' ? ams_qty($l['qty']) : ''); ?>"></td>
+                                        <td><input type="number" step="1" min="1" name="lines[<?= $i; ?>][qty]" class="form-control ams-line-qty" value="<?= e(isset($l['qty']) && $l['qty'] !== '' ? ams_qty($l['qty']) : ''); ?>"></td>
                                         <td><input type="number" step="0.01" min="0" name="lines[<?= $i; ?>][unit_cost]" class="form-control ams-line-cost" value="<?= e($l['unit_cost'] ?? ''); ?>"></td>
                                         <td class="text-right ams-line-amount"></td>
                                         <td><a href="#" class="text-danger ams-line-remove"><i class="fa-regular fa-trash-can"></i></a></td>
@@ -97,7 +85,7 @@ $opts = function ($rows, $selected) {
                                 </tbody>
                                 <tfoot>
                                     <tr>
-                                        <td colspan="5"><a href="#" id="ams-line-add"><i class="fa-regular fa-plus tw-mr-1"></i><?= _l('ams_po_add_line'); ?></a></td>
+                                        <td colspan="4"><a href="#" id="ams-line-add"><i class="fa-regular fa-plus tw-mr-1"></i><?= _l('ams_po_add_line'); ?></a></td>
                                         <td class="text-right tw-font-semibold" id="ams-po-total"></td>
                                         <td></td>
                                     </tr>
@@ -146,20 +134,7 @@ $opts = function ($rows, $selected) {
             $('#ams-po-total').text(fmt(total));
         }
 
-        $('#ams-po-lines').on('change', '.ams-line-type', function() {
-            var tr = $(this).closest('tr');
-            tr.find('.ams-line-asset').toggleClass('hide', this.value !== 'asset');
-            tr.find('.ams-line-item').toggleClass('hide', this.value !== 'item');
-        }).on('change', '.ams-line-itemsel', function() {
-            var tr = $(this).closest('tr'), opt = $(this).find('option:selected');
-            if (!tr.find('[name$="[description]"]').val()) {
-                tr.find('[name$="[description]"]').val(opt.text());
-            }
-            if (!tr.find('.ams-line-cost').val() && opt.data('cost')) {
-                tr.find('.ams-line-cost').val(opt.data('cost'));
-            }
-            recalc();
-        }).on('input', '.ams-line-qty, .ams-line-cost', recalc)
+        $('#ams-po-lines').on('input', '.ams-line-qty, .ams-line-cost', recalc)
           .on('click', '.ams-line-remove', function(e) {
             e.preventDefault();
             if ($('#ams-po-lines tbody tr').length > 1) {
@@ -172,10 +147,8 @@ $opts = function ($rows, $selected) {
         $('#ams-line-add').on('click', function(e) {
             e.preventDefault();
             var row = $('#ams-po-lines tbody tr:last').clone();
-            row.find('input').val('');
+            row.find('input:not([type=hidden])').val('');
             row.find('select').each(function() { this.selectedIndex = 0; });
-            row.find('.ams-line-asset').removeClass('hide');
-            row.find('.ams-line-item').addClass('hide');
             row.find('.ams-line-qty').val(1);
             $('#ams-po-lines tbody').append(row);
             renumber();

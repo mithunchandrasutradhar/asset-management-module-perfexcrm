@@ -1,12 +1,13 @@
 # Asset Management for Perfex CRM
 
-IT asset and inventory management built into Perfex CRM. It covers:
+IT asset management built into Perfex CRM. It covers:
 
 - an asset register, with check-out / check-in and a full history;
-- accessories, consumables and stock;
 - maintenance, software licences and purchase orders;
 - depreciation, QR / barcode labels, physical audits and reports;
 - a read-only HostBill inventory view with low-stock alerts.
+
+Quantity stock (accessories, consumables, goods for sale) is not tracked here: product stock is managed in HostBill, and anything worth tracking inside the company, including small items such as a mouse or headset, is registered as an asset.
 
 It uses Perfex's own UI, roles, staff, departments, email templates, notifications and data tables. There is no separate user system and no HR-module dependency.
 
@@ -76,30 +77,19 @@ Everything lives in the **Assets** menu in the Perfex sidebar.
   - managers are notified of declines.
 - **Overdue return reminders** to the holder and the managers, repeated every N days.
 - **Staff deactivation and deletion:**
-  - deactivating a staff member who holds items gives a warning, or a hard block (setting);
-  - on deletion, held items move to Perfex's "transfer data to" staff member.
+  - deactivating a staff member who holds assets gives a warning, or a hard block (setting);
+  - on deletion, held assets move to Perfex's "transfer data to" staff member.
 
 ### Requests and approvals
 
-- Staff request an asset, accessory or consumable, or report an issue with an asset they hold.
+- Staff request an asset, or report an issue with an asset they hold.
 - Two-stage approval:
   1. the **department approvers** of the requester's Perfex department (Assets → Setup → Department Approvers);
   2. staff with **Approve** permission.
 - Nobody approves their own request (admins excepted). When no one other than the requester can approve at department level, the request goes straight to the managers.
-- **Fulfilment** uses the normal check-out / issue actions. An approved request can also be turned into a purchase order.
+- **Fulfilment** checks out an In Store asset to the requester. An approved request can also be turned into a purchase order.
 - An issue report can be turned into a maintenance job; completing the job closes the request.
 - Approvers are notified of cancelled requests.
-
-### Accessories, consumables and stock items
-
-- Quantity items, each kind with its own permission group:
-  - **accessories**: checked out and returned, with partial returns;
-  - **consumables**: issued and not returned;
-  - **stock items**.
-- **Stock ledger:** one movement ledger (receive, issue, check-out, return, transfer, adjust) with user, reference and time. The cached stock levels are checked against the ledger daily.
-- Stock per location (a location tree, e.g. office → cabinet). Negative stock is blocked by default.
-- **Reorder levels** with low / out-of-stock alerts: once per dip, by bell and email, to chosen staff.
-- An optional **"Sellable"** flag on stock items, for your own reporting.
 
 ### Maintenance
 
@@ -123,14 +113,12 @@ Everything lives in the **Assets** menu in the Perfex sidebar.
 ### Purchase orders
 
 - Suppliers are kept as setup records (contact, email, website, address).
-- **Purchase orders** have asset lines and stock-item lines. The flow:
+- **Purchase orders** are for assets (category / brand / model, quantity, unit cost). The flow:
   1. draft;
   2. approval (optional, no self-approval);
   3. PDF emailed to the supplier, or marked as sent;
   4. goods receipt.
-- **Goods receipt** is all-or-nothing and can be partial:
-  - asset lines create one asset per unit, with serials, warranty months and invoice number;
-  - stock lines add stock.
+- **Goods receipt** is all-or-nothing and can be partial. Each received unit becomes an asset, with serial, warranty months and invoice number.
 - **Purchase register** with totals by period, category and supplier.
 
 ### Finance
@@ -175,18 +163,17 @@ Everything lives in the **Assets** menu in the Perfex sidebar.
 - **Dashboard:**
   - assets by status, total asset value and book value, top categories, latest assets;
   - warranties and licences expiring;
-  - low / out-of-stock items, open and overdue maintenance, POs awaiting approval, running audits, HostBill stock.
+  - open and overdue maintenance, POs awaiting approval, running audits, HostBill stock.
 - **Reports hub** (Assets → Reports):
-  - asset register, asset history, assets by staff, warranty expiry;
+  - asset register, asset history, assets by staff, warranty expiry, purchase register;
   - valuation (by category, location or department), depreciation forecast (chart), maintenance cost (chart), disposal register;
-  - stock levels and value, stock movements, purchase register;
-  - audits, maintenance, licences, purchase orders.
+  - audits, maintenance, licences, purchase orders, HostBill inventory.
 
   Every grid is a standard Perfex table with Excel / CSV / PDF / print export.
 
 ### Import and data
 
-- **Import** (Assets → Import) of assets, stock items and suppliers from CSV or .xlsx, up to 5,000 rows / 10 MB:
+- **Import** (Assets → Import) of assets and suppliers from CSV or .xlsx, up to 5,000 rows / 10 MB:
   1. automatic column mapping;
   2. a validation-only preview;
   3. the import itself;
@@ -204,7 +191,7 @@ Bell notifications, plus 10 editable email templates in **Setup → Email Templa
 - request submitted;
 - request updated;
 - overdue return;
-- low / out-of-stock alert;
+- HostBill low / out-of-stock alert;
 - HostBill inventory refresh alert;
 - purchase order to supplier;
 - maintenance due;
@@ -221,9 +208,6 @@ All permissions are standard Perfex permissions (**Setup → Staff → Roles**):
 | Permission | Capabilities |
 |---|---|
 | AMS - Assets | View own (My Assets) / view all / create / edit / delete, **Check out**, **Check in**, **Dispose** |
-| AMS - Accessories | View / create / edit / delete, **Check out / check in**, **Adjust** |
-| AMS - Consumables | View / create / edit / delete, **Issue**, **Adjust** |
-| AMS - Stock Items | View / create / edit / delete, **Issue**, **Adjust** |
 | AMS - Asset Requests | Create and view own, view all, **Approve** |
 | AMS - Maintenance | View / create / edit / delete (jobs and schedules) |
 | AMS - Software Licences | View own / view all / create / edit / delete, **View licence keys** |
@@ -246,14 +230,14 @@ All permissions are checked on the server:
 1. **Assets → Setup → General Settings:**
    - asset tag format;
    - **asset manager recipients**, who get the reminders (active admins when empty);
-   - low-stock recipients, acceptance mode and terms;
+   - acceptance mode and terms;
    - label size.
 2. **Setup → Categories:**
    - add each category with its **code** (used in tags) and depreciation values;
    - then statuses, locations, brands, models and suppliers.
 3. **Setup → Department Approvers:** who approves requests for each Perfex department.
 4. Print one test label on the real printer and adjust the size.
-5. Import existing assets and stock (**Assets → Import**), reviewing the preview first.
+5. Import existing assets (**Assets → Import**), reviewing the preview first.
 6. Optional: **HostBill Settings**:
    1. create a read-only API key in HostBill and allow the CRM server's IP;
    2. **Test connection**;
@@ -272,7 +256,6 @@ The module runs on the Perfex cron (never call anything else):
 | Overdue-return reminders | every 6 hours |
 | Maintenance schedules and licence expiry reminders | every 6 hours |
 | Book value (depreciation) refresh | daily |
-| Stock ledger integrity check | daily |
 
 ---
 
@@ -305,10 +288,7 @@ These are planned but not built:
 - a transfer workflow with approval;
 - disposal certificate upload, data-wipe confirmation and approval;
 - attachments on maintenance jobs;
-- images on stock items and asset models;
-- "incoming" stock from open purchase orders;
-- serial capture for sold stock;
-- stock take / cycle count;
+- images on asset models;
 - posting purchases as Perfex Expenses;
 - a support-ticket link;
 - a REST API.

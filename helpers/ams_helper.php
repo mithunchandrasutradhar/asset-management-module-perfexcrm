@@ -33,7 +33,7 @@ function ams_setup_entities()
                 'salvage_percent'     => ['type' => 'number', 'label' => 'ams_dep_salvage_percent', 'step' => '0.01'],
                 'active'             => ['type' => 'checkbox', 'label' => 'ams_active', 'default' => 1],
             ],
-            'in_use' => [['ams_assets', 'category_id'], ['ams_categories', 'parent_id'], ['ams_models', 'category_id'], ['ams_items', 'category_id'], ['ams_licenses', 'category_id'], ['ams_po_lines', 'category_id'], ['ams_requests', 'category_id'], ['ams_audits', 'category_id']],
+            'in_use' => [['ams_assets', 'category_id'], ['ams_categories', 'parent_id'], ['ams_models', 'category_id'], ['ams_licenses', 'category_id'], ['ams_po_lines', 'category_id'], ['ams_requests', 'category_id'], ['ams_audits', 'category_id']],
         ],
         'brands' => [
             'table'    => 'ams_brands',
@@ -45,7 +45,7 @@ function ams_setup_entities()
                 'notes'   => ['type' => 'textarea', 'label' => 'ams_notes'],
                 'active'  => ['type' => 'checkbox', 'label' => 'ams_active', 'default' => 1],
             ],
-            'in_use' => [['ams_assets', 'brand_id'], ['ams_models', 'brand_id'], ['ams_items', 'brand_id'], ['ams_licenses', 'brand_id'], ['ams_po_lines', 'brand_id']],
+            'in_use' => [['ams_assets', 'brand_id'], ['ams_models', 'brand_id'], ['ams_licenses', 'brand_id'], ['ams_po_lines', 'brand_id']],
         ],
         'models' => [
             'table'    => 'ams_models',
@@ -89,7 +89,7 @@ function ams_setup_entities()
                 'notes'            => ['type' => 'textarea', 'label' => 'ams_notes'],
                 'active'           => ['type' => 'checkbox', 'label' => 'ams_active', 'default' => 1],
             ],
-            'in_use' => [['ams_assets', 'location_id'], ['ams_locations', 'parent_id'], ['ams_stock_movements', 'location_id'], ['ams_stock_levels', 'location_id'], ['ams_items', 'default_location_id'], ['ams_item_checkouts', 'location_id'], ['ams_goods_receipts', 'location_id'], ['ams_purchase_orders', 'delivery_location_id'], ['ams_audits', 'location_id'], ['ams_audit_lines', 'expected_location_id'], ['ams_audit_lines', 'found_location_id']],
+            'in_use' => [['ams_assets', 'location_id'], ['ams_locations', 'parent_id'], ['ams_goods_receipts', 'location_id'], ['ams_purchase_orders', 'delivery_location_id'], ['ams_audits', 'location_id'], ['ams_audit_lines', 'expected_location_id'], ['ams_audit_lines', 'found_location_id']],
         ],
         'suppliers' => [
             'table'    => 'ams_suppliers',
@@ -105,7 +105,7 @@ function ams_setup_entities()
                 'notes'          => ['type' => 'textarea', 'label' => 'ams_notes'],
                 'active'         => ['type' => 'checkbox', 'label' => 'ams_active', 'default' => 1],
             ],
-            'in_use' => [['ams_assets', 'supplier_id'], ['ams_stock_movements', 'supplier_id'], ['ams_purchase_orders', 'supplier_id'], ['ams_maintenance', 'supplier_id'], ['ams_maintenance_schedules', 'supplier_id'], ['ams_licenses', 'supplier_id']],
+            'in_use' => [['ams_assets', 'supplier_id'], ['ams_purchase_orders', 'supplier_id'], ['ams_maintenance', 'supplier_id'], ['ams_maintenance_schedules', 'supplier_id'], ['ams_licenses', 'supplier_id']],
         ],
     ];
 
@@ -459,64 +459,7 @@ function ams_assets_scope_where($alias)
     return 'AND ' . $alias . '.assigned_type = "staff" AND ' . $alias . '.assigned_id = ' . (int) get_staff_user_id();
 }
 
-// ─── Inventory (quantity-tracked items) ───────────────────────────────────
-
-/**
- * Item kinds and the Perfex permission group that governs each one.
- * Capabilities per group: view / create / edit / delete, "adjust" (receive,
- * transfer, stock adjustments), plus "checkout" (accessories) or "issue".
- */
-function ams_item_kinds()
-{
-    return [
-        'accessory'  => ['perm' => 'ams_accessories', 'plural' => 'ams_accessories', 'singular' => 'ams_accessory', 'icon' => 'fa-solid fa-computer-mouse'],
-        'consumable' => ['perm' => 'ams_consumables', 'plural' => 'ams_consumables', 'singular' => 'ams_consumable', 'icon' => 'fa-solid fa-box-open'],
-        'stock'      => ['perm' => 'ams_stock', 'plural' => 'ams_stock_items', 'singular' => 'ams_stock_item', 'icon' => 'fa-solid fa-boxes-stacked'],
-    ];
-}
-
-function ams_item_kind_options()
-{
-    return array_map(fn ($k, $cfg) => ['id' => $k, 'name' => _l($cfg['singular'])], array_keys(ams_item_kinds()), ams_item_kinds());
-}
-
-function ams_item_can($capability, $kind)
-{
-    $kinds = ams_item_kinds();
-
-    return isset($kinds[$kind]) && staff_can($capability, $kinds[$kind]['perm']);
-}
-
-/** Kinds the current user may see globally ("view"). */
-function ams_item_viewable_kinds()
-{
-    return array_values(array_filter(array_keys(ams_item_kinds()), fn ($k) => ams_item_can('view', $k)));
-}
-
-function ams_item_can_view_kind_page($kind)
-{
-    return ams_item_can('view', $kind) || ($kind === 'accessory' && staff_can('view_own', 'ams_accessories'));
-}
-
-/** out | low | ok, from the available quantity and the item's reorder level. */
-function ams_stock_state($available, $reorderLevel)
-{
-    if ((float) $available <= 0) {
-        return 'out';
-    }
-    if ((float) $reorderLevel > 0 && (float) $available <= (float) $reorderLevel) {
-        return 'low';
-    }
-
-    return 'ok';
-}
-
-function ams_stock_state_badge($state)
-{
-    $map = ['out' => 'danger', 'low' => 'warning', 'ok' => 'success'];
-
-    return '<span class="label label-' . ($map[$state] ?? 'default') . '">' . _l('ams_stock_state_' . $state) . '</span>';
-}
+// ─── Quantities ───────────────────────────────────────────────────────────
 
 /** Quantities: no trailing ".00" for whole numbers. */
 function ams_qty($qty)
@@ -524,24 +467,6 @@ function ams_qty($qty)
     $qty = (float) $qty;
 
     return floor($qty) == $qty ? number_format($qty, 0, '.', '') : rtrim(rtrim(number_format($qty, 2, '.', ''), '0'), '.');
-}
-
-function ams_movement_type_options()
-{
-    return array_map(fn ($t) => ['id' => $t, 'name' => _l('ams_mv_' . $t)], ['receive', 'issue', 'checkout', 'return', 'transfer_in', 'transfer_out', 'adjust']);
-}
-
-function ams_adjust_reason_options()
-{
-    return array_map(fn ($r) => ['id' => $r, 'name' => _l('ams_reason_' . $r)], ['correction', 'found', 'damaged', 'lost', 'expired', 'other']);
-}
-
-/** Staff selected in settings to receive low / out-of-stock notifications. */
-function ams_low_stock_recipients()
-{
-    $ids = json_decode((string) get_option('ams_low_stock_notify_staff'), true);
-
-    return is_array($ids) ? array_values(array_filter(array_map('intval', $ids))) : [];
 }
 
 // ─── Notifications & email ────────────────────────────────────────────────
@@ -694,7 +619,6 @@ function ams_acceptance_status_badge($status)
 function ams_can_use_my_assets()
 {
     return staff_can('view', 'ams_assets') || staff_can('view_own', 'ams_assets')
-        || staff_can('view', 'ams_accessories') || staff_can('view_own', 'ams_accessories')
         || staff_can('view_own', 'ams_licenses')
         || staff_can('create', 'ams_requests') || staff_can('view_own', 'ams_requests') || staff_can('view', 'ams_requests');
 }
@@ -1024,16 +948,11 @@ function ams_can_view_settings()
     return is_admin() || staff_can('view', 'ams_settings') || staff_can('edit', 'ams_settings');
 }
 
-/** Staff who may use the import page for at least one type (assets, stock items, suppliers). */
+/** Staff who may use the import page for at least one type (assets, suppliers). */
 function ams_can_import()
 {
     if (staff_can('create', 'ams_assets') || staff_can('edit', 'ams_assets') || staff_can('create', 'ams_setup') || staff_can('edit', 'ams_setup')) {
         return true;
-    }
-    foreach (array_keys(ams_item_kinds()) as $kind) {
-        if (ams_item_can('create', $kind) || ams_item_can('edit', $kind)) {
-            return true;
-        }
     }
 
     return false;

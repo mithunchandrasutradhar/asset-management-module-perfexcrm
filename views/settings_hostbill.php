@@ -72,12 +72,6 @@ $lastSync     = get_option('ams_hb_last_sync');
 </div>
 <div class="row">
     <div class="col-md-6">
-        <?= render_select('settings[ams_hb_alert_recipients]', [
-            ['id' => 'hostbill', 'name' => _l('ams_hb_recipients_own')],
-            ['id' => 'stock', 'name' => _l('ams_hb_recipients_stock')],
-        ], ['id', 'name'], 'ams_hb_alert_recipients', get_option('ams_hb_alert_recipients'), [], [], '', '', false); ?>
-    </div>
-    <div class="col-md-6 ams-hb-own-staff">
         <input type="hidden" name="settings[ams_hb_alert_staff][]" value="">
         <?= render_select('settings[ams_hb_alert_staff][]', $staffOptions, ['id', 'name'], 'ams_hb_alert_staff', $alertStaff, ['multiple' => true, 'data-actions-box' => true], [], '', '', false); ?>
     </div>
@@ -104,12 +98,5 @@ $lastSync     = get_option('ams_hb_last_sync');
             });
         });
 
-        // The staff list only applies when HostBill alerts use their own recipients.
-        var recipients = $('select[name="settings[ams_hb_alert_recipients]"]');
-        var toggle = function() {
-            $('.ams-hb-own-staff').toggleClass('hide', recipients.val() !== 'hostbill');
-        };
-        recipients.on('change', toggle);
-        toggle();
     });
 </script>

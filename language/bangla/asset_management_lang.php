@@ -256,128 +256,29 @@ $lang['ams_setting_warranty_days']    = 'যত দিনের মধ্যে 
 $lang['ams_setting_max_upload']       = 'প্রতি ফাইলের সর্বোচ্চ আপলোড সাইজ (MB)';
 
 // ─── Inventory (Phase 3) ──────────────────────────────────────────────────
-$lang['ams_perm_accessories']       = 'AMS - আনুষঙ্গিক সামগ্রী';
-$lang['ams_perm_consumables']       = 'AMS - ব্যবহার্য সামগ্রী';
-$lang['ams_perm_stock']             = 'AMS - স্টক আইটেম';
-$lang['ams_perm_adjust']            = 'স্টক গ্রহণ / স্থানান্তর / সমন্বয়';
-$lang['ams_perm_issue']             = 'ইস্যু';
-$lang['ams_perm_checkout_checkin']  = 'চেক আউট / চেক ইন';
 
-$lang['ams_accessory']          = 'আনুষঙ্গিক সামগ্রী';
-$lang['ams_accessories']        = 'আনুষঙ্গিক সামগ্রীসমূহ';
-$lang['ams_consumable']         = 'ব্যবহার্য সামগ্রী';
-$lang['ams_consumables']        = 'ব্যবহার্য সামগ্রীসমূহ';
-$lang['ams_stock_item']         = 'স্টক আইটেম';
-$lang['ams_stock_items']        = 'স্টক আইটেমসমূহ';
 $lang['ams_item']               = 'আইটেম';
-$lang['ams_item_kind']          = 'আইটেমের ধরন';
-$lang['ams_custom_field_items'] = 'ইনভেন্টরি আইটেম (সম্পদ ব্যবস্থাপনা)';
 
-$lang['ams_item_details']         = 'আইটেমের বিবরণ';
-$lang['ams_sku']                  = 'SKU';
-$lang['ams_item_name']            = 'আইটেমের নাম';
 $lang['ams_unit']                 = 'একক';
-$lang['ams_pricing_and_stock']    = 'মূল্য ও স্টক নিয়ন্ত্রণ';
 $lang['ams_unit_cost']            = 'একক মূল্য';
-$lang['ams_sale_price']           = 'বিক্রয়মূল্য';
-$lang['ams_reorder_level']        = 'রি-অর্ডার লেভেল';
-$lang['ams_reorder_qty']          = 'রি-অর্ডার পরিমাণ';
-$lang['ams_reorder_help']         = 'উপলব্ধ স্টক রি-অর্ডার লেভেলে নেমে এলে আইটেমটি স্বল্প স্টক হিসেবে চিহ্নিত হয় এবং সেটিংসে নির্বাচিত কর্মীদের জানানো হয়। এই আইটেম পর্যবেক্ষণ না করতে 0 রাখুন।';
-$lang['ams_default_location']     = 'ডিফল্ট অবস্থান';
-$lang['ams_is_sellable']          = 'বিক্রয়যোগ্য (HostBill-এর মাধ্যমে বিক্রি করা যায়)';
 
-$lang['ams_is_sellable_help'] = 'শুধু নিজস্ব রিপোর্টিংয়ের জন্য; HostBill-এ এর কোনো প্রভাব নেই।';
-$lang['ams_opening_stock']        = 'প্রারম্ভিক স্টক';
-$lang['ams_opening_stock_help']   = 'ঐচ্ছিক: আপনার কাছে ইতিমধ্যে থাকা পরিমাণ। এটি স্টক লেজারে প্রাপ্তি হিসেবে রেকর্ড করা হবে।';
 $lang['ams_quantity']             = 'পরিমাণ';
 
-$lang['ams_on_hand']           = 'হাতে আছে';
-$lang['ams_reserved']          = 'সংরক্ষিত';
-$lang['ams_available']         = 'উপলব্ধ';
-$lang['ams_stock_value']       = 'স্টকের মূল্য';
-$lang['ams_stock_state']       = 'স্টক';
-$lang['ams_stock_state_ok']    = 'স্টকে আছে';
-$lang['ams_stock_state_low']   = 'স্টক কম';
-$lang['ams_stock_state_out']   = 'স্টক শেষ';
-$lang['ams_stock_by_location'] = 'অবস্থান অনুযায়ী স্টক';
-$lang['ams_no_stock_yet']      = 'এখনো কোনো স্টক রেকর্ড করা হয়নি।';
-$lang['ams_stock_levels']      = 'স্টকের পরিমাণ';
-$lang['ams_stock_movements']   = 'স্টক মুভমেন্ট';
 
-$lang['ams_receive_stock']         = 'স্টক গ্রহণ';
-$lang['ams_issue']                 = 'ইস্যু';
-$lang['ams_issue_to']              = 'যাকে ইস্যু';
 $lang['ams_transfer']              = 'স্থানান্তর';
-$lang['ams_adjust']                = 'সমন্বয়';
-$lang['ams_adjust_qty']            = 'পরিমাণ পরিবর্তন';
-$lang['ams_adjust_qty_help']       = 'যোগ করতে ধনাত্মক (যেমন পাওয়া গেছে), বাদ দিতে ঋণাত্মক (যেমন -2 ক্ষতিগ্রস্ত)।';
 $lang['ams_reason']                = 'কারণ';
-$lang['ams_from_location']         = 'উৎস অবস্থান';
-$lang['ams_to_location']           = 'গন্তব্য অবস্থান';
-$lang['ams_reference']             = 'রেফারেন্স';
-$lang['ams_reference_placeholder'] = 'ইনভয়েস / চালান নং';
-$lang['ams_update_item_cost']      = 'এখন থেকে এই একক মূল্যকে আইটেমের মূল্য হিসেবে ব্যবহার করুন';
-$lang['ams_party']                 = 'প্রাপক / প্রেরক';
-$lang['ams_issued_to_staff']       = 'কর্মীকে ইস্যু / চেক আউট করা হয়েছে';
-$lang['ams_movement_type']         = 'মুভমেন্ট';
 
-$lang['ams_mv_receive']      = 'গৃহীত';
-$lang['ams_mv_issue']        = 'ইস্যুকৃত';
-$lang['ams_mv_checkout']     = 'চেক আউট';
-$lang['ams_mv_return']       = 'ফেরত';
-$lang['ams_mv_transfer_in']  = 'স্থানান্তর (আগত)';
-$lang['ams_mv_transfer_out'] = 'স্থানান্তর (বহির্গামী)';
-$lang['ams_mv_adjust']       = 'সমন্বয়';
 
-$lang['ams_reason_correction'] = 'গণনা সংশোধন';
-$lang['ams_reason_found']      = 'পাওয়া গেছে';
-$lang['ams_reason_damaged']    = 'ক্ষতিগ্রস্ত';
-$lang['ams_reason_lost']       = 'হারিয়ে গেছে';
-$lang['ams_reason_expired']    = 'মেয়াদোত্তীর্ণ';
-$lang['ams_reason_other']      = 'অন্যান্য';
 
-$lang['ams_accessory_checkouts'] = 'আনুষঙ্গিক সামগ্রী চেক আউট';
-$lang['ams_my_checkouts']        = 'আমার চেক আউট';
-$lang['ams_expected_return']     = 'প্রত্যাশিত ফেরত';
 $lang['ams_returned']            = 'ফেরত দেওয়া হয়েছে';
-$lang['ams_outstanding']         = 'বকেয়া';
-$lang['ams_return_qty']          = 'ফেরতের পরিমাণ';
 $lang['ams_overdue']             = 'মেয়াদ পেরিয়ে গেছে';
-$lang['ams_checkout_open']       = 'বাইরে';
-$lang['ams_checkout_closed']     = 'ফেরত';
 
-$lang['ams_inventory_value']  = 'ইনভেন্টরির মূল্য';
-$lang['ams_low_stock']        = 'স্টক কম';
-$lang['ams_out_of_stock']     = 'স্টক শেষ';
-$lang['ams_accessories_out']  = 'বাইরে থাকা আনুষঙ্গিক সামগ্রী';
-$lang['ams_stock_alerts']     = 'স্টক সতর্কতা';
-$lang['ams_no_stock_alerts']  = 'কোনো আইটেম রিঅর্ডার লেভেলের নিচে নেই।';
 
-$lang['ams_notify_low_stock']    = 'স্টক কম: %s - %s উপলব্ধ';
-$lang['ams_notify_out_of_stock'] = 'স্টক শেষ: %s - %s উপলব্ধ';
 
-$lang['ams_settings_inventory']          = 'ইনভেন্টরি';
-$lang['ams_setting_sku_prefix']          = 'SKU প্রিফিক্স (স্বয়ংক্রিয় SKU)';
-$lang['ams_setting_notify_staff']        = 'কম / শেষ হয়ে যাওয়া স্টক আইটেম সম্পর্কে অবহিত করুন';
-$lang['ams_setting_notify_staff_help']   = 'রিঅর্ডার লেভেলযুক্ত কোনো আইটেমের স্টক কমে গেলে বা শেষ হলে এই কর্মীরা Perfex নোটিফিকেশন পাবেন।';
-$lang['ams_setting_block_negative']      = 'উপলব্ধ স্টকের চেয়ে বেশি নেওয়া বন্ধ রাখুন';
-$lang['ams_setting_block_negative_help'] = 'প্রস্তাবিত। বন্ধ থাকলে ইস্যু/চেক আউটের ফলে স্টক শূন্যের নিচে যেতে পারে।';
 
-$lang['ams_received_success']           = '%s গ্রহণ করা হয়েছে';
-$lang['ams_issued_success']             = '%s ইস্যু করা হয়েছে %s-কে';
-$lang['ams_returned_success']           = '%s ফেরত দেওয়া হয়েছে';
-$lang['ams_transferred_success']        = '%s স্থানান্তর করা হয়েছে';
-$lang['ams_adjusted_success']           = 'স্টক সমন্বয় করা হয়েছে';
 $lang['ams_qty_positive']               = 'শূন্যের চেয়ে বেশি পরিমাণ লিখুন।';
-$lang['ams_adjust_qty_nonzero']         = 'ধনাত্মক বা ঋণাত্মক পরিমাণ লিখুন (শূন্য নয়)।';
 $lang['ams_negative_not_allowed']       = 'ঋণাত্মক মান গ্রহণযোগ্য নয়।';
-$lang['ams_insufficient_stock']         = 'পর্যাপ্ত স্টক নেই: মাত্র %s উপলব্ধ আছে, অবস্থান: %s।';
-$lang['ams_return_qty_invalid']         = 'ফেরতের পরিমাণ 0 থেকে %s-এর মধ্যে হতে হবে।';
-$lang['ams_transfer_locations_invalid'] = 'দুটি ভিন্ন অবস্থান নির্বাচন করুন।';
 $lang['ams_select_recipient']           = 'কর্মী বা বিভাগ নির্বাচন করুন।';
-$lang['ams_sku_exists']                 = 'SKU %s ইতিমধ্যে ব্যবহৃত হচ্ছে।';
-$lang['ams_item_has_movements']         = 'এই আইটেমের স্টক ইতিহাস আছে, তাই মুছে ফেলা যাবে না। এর পরিবর্তে নিষ্ক্রিয় করুন।';
-$lang['ams_item_inactive']              = 'এই আইটেমটি নিষ্ক্রিয়।';
 
 // ─── HostBill (Phase 4) ───────────────────────────────────────────────────
 $lang['ams_perm_hostbill']  = 'AMS - HostBill ইন্টিগ্রেশন';
@@ -385,10 +286,6 @@ $lang['ams_perm_hb_edit'] = 'স্বল্প স্টক সীমা সম
 $lang['ams_perm_hb_sync'] = 'এখনই রিফ্রেশ';
 
 
-$lang['ams_mv_sale']        = 'বিক্রিত (HostBill)';
-$lang['ams_mv_sale_return'] = 'ফেরত (HostBill)';
-$lang['ams_mv_reserve']     = 'সংরক্ষিত (HostBill)';
-$lang['ams_mv_release']     = 'সংরক্ষণ মুক্ত করা হয়েছে';
 
 // Settings
 $lang['ams_hb_settings_intro'] = 'HostBill-ই তার প্রোডাক্ট স্টকের মালিক থাকে: Perfex শুধু তা পড়ে (শুধু-পড়ার API কল), Assets → HostBill Inventory-তে দেখায় এবং স্বল্প / শেষ স্টকের সতর্কতা পাঠায়। HostBill-এ কিছুই লেখা হয় না।';
@@ -406,17 +303,6 @@ $lang['ams_hb_test_connection']      = 'সংযোগ পরীক্ষা';
 $lang['ams_hb_api_help'] = 'HostBill → Settings → Security → API access-এ API ID / key তৈরি করুন (অর্ডার পেজ ও প্রোডাক্ট পড়ার অনুমতিই যথেষ্ট) এবং সেখানে এই CRM সার্ভারের IP ঠিকানার অনুমতি দিন। কী এনক্রিপ্ট করে সংরক্ষিত হয়।';
 $lang['ams_hb_sync_enabled']         = 'স্বয়ংক্রিয়ভাবে অর্ডার সিঙ্ক করুন (Perfex cron)';
 $lang['ams_hb_sync_interval']        = 'প্রতি (মিনিট) পর পর সিঙ্ক';
-$lang['ams_hb_lookback_days']        = 'গত (দিন) এর অর্ডার যাচাই করুন';
-$lang['ams_hb_max_pages']            = 'প্রতি সিঙ্কে সর্বোচ্চ অর্ডার পৃষ্ঠা';
-$lang['ams_hb_deduct_on']            = 'স্টক কর্তন হবে যখন';
-$lang['ams_hb_reserve_on_pending']   = 'অর্ডার অপেক্ষমাণ থাকা অবস্থায় স্টক সংরক্ষণ করুন';
-$lang['ams_hb_release_on_refund']    = 'রিফান্ডকৃত ইনভয়েসকে বাতিল হিসেবে গণ্য করুন';
-$lang['ams_hb_restock_on_cancel']    = 'কর্তনকৃত অর্ডার বাতিল হলে স্টক ফেরত দিন';
-$lang['ams_hb_push_enabled']         = 'HostBill প্রোডাক্টের স্টক হালনাগাদ করুন';
-$lang['ams_hb_push_immediately']     = 'প্রতিটি স্টক পরিবর্তনের পর সাথে সাথে পুশ করুন';
-$lang['ams_hb_stock_buffer']         = 'নিরাপত্তা বাফার (একক)';
-$lang['ams_hb_webhook_enabled']      = 'Webhook কল গ্রহণ করুন';
-$lang['ams_hb_webhook_ips']          = 'অনুমোদিত Webhook IP (কমা দিয়ে আলাদা করুন, খালি = যেকোনো)';
 $lang['ams_hb_alert_staff'] = 'যে কর্মীরা HostBill সতর্কতা পাবেন';
 $lang['ams_hb_log_retention_days']   = 'সিঙ্ক লগ রাখুন (দিন)';
 
@@ -433,7 +319,6 @@ $lang['ams_hb_products']          = 'HostBill প্রোডাক্ট';
 $lang['ams_hb_product']           = 'HostBill প্রোডাক্ট';
 $lang['ams_hb_sync_log'] = 'সিঙ্ক লগ';
 $lang['ams_hb_order_lines']       = 'অর্ডার লাইন';
-$lang['ams_hb_state_help']        = 'সংরক্ষিত = এই অর্ডারের জন্য ধরে রাখা; বিক্রিত = স্টক থেকে কর্তন করা; মুক্ত / ফেরত = ফিরিয়ে দেওয়া; ঘাটতি = পর্যাপ্ত স্টক নেই (প্রতিটি সিঙ্কে পুনরায় চেষ্টা করা হয়); ম্যাপ করা হয়নি = HostBill প্রোডাক্টটি কোনো Perfex আইটেমের সাথে যুক্ত নয়।';
 $lang['ams_hb_hostbill_qty'] = 'পরিমাণ';
 $lang['ams_hb_direction']         = 'ধরন';
 $lang['ams_hb_api_call']          = 'API কল';
@@ -460,7 +345,7 @@ $lang['ams_my_assets']          = 'আমার সম্পদ';
 $lang['ams_my_requests']        = 'আমার অনুরোধ';
 $lang['ams_assets_by_staff']    = 'কর্মী অনুযায়ী সম্পদ';
 $lang['ams_staff_profile']      = 'কর্মীর প্রোফাইল';
-$lang['ams_staff_assets_button'] = 'কাছে থাকা সম্পদ: %sটি সম্পদ, %sটি আনুষঙ্গিক সামগ্রী';
+$lang['ams_staff_assets_button'] = 'হাতে থাকা অ্যাসেট: %s';
 $lang['ams_holds_items']        = 'আইটেম আছে';
 $lang['ams_open_requests']      = 'খোলা অনুরোধ';
 $lang['ams_acc_pending_short']  = 'স্বাক্ষর বাকি';
@@ -506,9 +391,7 @@ $lang['ams_req_report_issue']    = 'সমস্যা জানান';
 $lang['ams_req_no']              = 'অনুরোধ #';
 $lang['ams_req_type']            = 'ধরন';
 $lang['ams_req_type_asset']      = 'নতুন সম্পদ (ল্যাপটপ, মনিটর, ...)';
-$lang['ams_req_type_accessory']  = 'আনুষঙ্গিক';
-$lang['ams_req_type_consumable'] = 'ব্যবহার্য / স্টক আইটেম';
-$lang['ams_req_type_issue'] = 'আমার কাছে থাকা সম্পদ বা এক্সেসরিতে সমস্যা';
+$lang['ams_req_type_issue'] = 'আমার কাছে থাকা অ্যাসেটে সমস্যা';
 $lang['ams_req_subject']         = 'বিষয়';
 $lang['ams_req_description']     = 'বিস্তারিত / কারণ';
 $lang['ams_requester']           = 'অনুরোধকারী';
@@ -546,7 +429,7 @@ $lang['ams_req_now']             = 'অনুরোধের বর্তমা�
 $lang['ams_req_not_approved']    = 'শুধুমাত্র অনুমোদিত অনুরোধ সম্পন্ন করা যায়।';
 $lang['ams_req_fulfilled_msg']   = 'অনুরোধ %s সম্পন্ন হয়েছে।';
 $lang['ams_req_cancelled_msg']   = 'অনুরোধ বাতিল করা হয়েছে।';
-$lang['ams_req_issue_own_asset'] = 'বর্তমানে আপনার কাছে থাকা একটি সম্পদ বা এক্সেসরি বাছাই করুন।';
+$lang['ams_req_issue_own_asset'] = 'বর্তমানে আপনার কাছে থাকা একটি সম্পদ বাছাই করুন।';
 
 // Department approvers
 $lang['ams_department_approvers']      = 'বিভাগীয় অনুমোদনকারী';
@@ -558,7 +441,7 @@ $lang['ams_waiting_approval'] = 'অপেক্ষমাণ';
 
 // Settings
 $lang['ams_settings_people']                 = 'কর্মী, প্রাপ্তি স্বীকৃতি ও অনুরোধ';
-$lang['ams_setting_acceptance_mode']         = 'কর্মীকে সম্পদ/আনুষঙ্গিক ইস্যু করার সময় স্বাক্ষরিত প্রাপ্তি স্বীকৃতি';
+$lang['ams_setting_acceptance_mode']         = 'কর্মীকে সম্পদ ইস্যু করার সময় স্বাক্ষরিত প্রাপ্তি স্বীকৃতি';
 $lang['ams_acceptance_mode_always']          = 'সবসময়';
 $lang['ams_acceptance_mode_category']        = 'ক্যাটাগরি অনুযায়ী (সেটআপ → ক্যাটাগরি)';
 $lang['ams_acceptance_mode_never']           = 'কখনো না';
@@ -573,7 +456,7 @@ $lang['ams_setting_block_deactivation']      = 'আইটেম ধারণক�
 $lang['ams_setting_block_deactivation_help'] = 'বন্ধ থাকলে এর পরিবর্তে একটি সতর্কবার্তা দেখানো হয়।';
 
 // Staff lifecycle
-$lang['ams_staff_holds_items']           = '%s-এর কাছে এখনও %s টি সম্পদ এবং %s টি আনুষঙ্গিক আইটেম রয়েছে।';
+$lang['ams_staff_holds_items']           = '%s এর কাছে এখনও %sটি অ্যাসেট আছে।';
 $lang['ams_staff_deactivation_blocked']  = 'নিষ্ক্রিয়করণ আটকানো হয়েছে - আগে আইটেমগুলো চেক ইন করুন (সম্পদ → কর্মী অনুযায়ী সম্পদ)।';
 $lang['ams_transferred_on_delete']       = 'কর্মী মুছে ফেলার সময় %s থেকে %s-এ স্থানান্তরিত';
 
@@ -715,15 +598,12 @@ $lang['ams_po_order_date']      = 'আদেশের তারিখ';
 $lang['ams_po_expected_date']   = 'প্রত্যাশিত ডেলিভারি';
 $lang['ams_po_deliver_to']      = 'ডেলিভারির স্থান';
 $lang['ams_po_lines']           = 'লাইন';
-$lang['ams_po_line_type']       = 'ধরন';
-$lang['ams_po_type_asset']      = 'সম্পদ (প্রতি ইউনিটে একটি)';
-$lang['ams_po_type_item']       = 'স্টক আইটেম';
-$lang['ams_po_line_what']       = 'ক্যাটাগরি / ব্র্যান্ড / মডেল অথবা স্টক আইটেম';
+$lang['ams_po_line_what']       = 'ক্যাটাগরি / ব্র্যান্ড / মডেল';
 $lang['ams_po_amount']          = 'মূল্য';
 $lang['ams_po_total']           = 'মোট';
 $lang['ams_po_terms']           = 'শর্তাবলি';
 $lang['ams_po_add_line']        = 'লাইন যোগ করুন';
-$lang['ams_po_lines_help']      = 'সম্পদ লাইন গ্রহণের সময় প্রতি ইউনিটে একটি সম্পদ তৈরি করে (সিরিয়াল, ওয়ারেন্টি)। স্টক আইটেম লাইন ইনভেন্টরিতে পরিমাণ যোগ করে।';
+$lang['ams_po_lines_help']      = 'প্রতিটি লাইন গ্রহণের সময় প্রতি ইউনিটে একটি সম্পদ তৈরি করে (সিরিয়াল, ওয়ারেন্টি)।';
 $lang['ams_po_save_draft']      = 'খসড়া সংরক্ষণ';
 $lang['ams_po_from_request']    = 'অনুরোধ %s থেকে তৈরি।';
 $lang['ams_po_create_from_request'] = 'ক্রয় আদেশ তৈরি করুন';
@@ -747,7 +627,6 @@ $lang['ams_po_receive_now']      = 'এখনই গ্রহণ করুন';
 $lang['ams_po_serials_warranty'] = 'সিরিয়াল নম্বর / ওয়ারেন্টি';
 $lang['ams_po_serials_placeholder'] = 'প্রতি লাইনে একটি সিরিয়াল (ঐচ্ছিক)';
 $lang['ams_po_warranty_months']  = 'ওয়ারেন্টি (মাস)';
-$lang['ams_po_stock_receipt']    = 'অবস্থানের স্টকে যোগ করা হয়েছে';
 $lang['ams_po_receipt_date']     = 'গ্রহণের তারিখ';
 $lang['ams_po_receive_help']     = 'সম্পদ লাইন: অবস্থানে প্রতি ইউনিটে একটি সম্পদ "In Store" অবস্থায় তৈরি হয়, সাথে সরবরাহকারী, ক্রয় আদেশ নম্বর, ইনভয়েস, মূল্য ও ওয়ারেন্টি পূরণ করা থাকে।';
 $lang['ams_po_receipts']         = 'মালামাল প্রাপ্তি';
@@ -777,7 +656,6 @@ $lang['ams_po_cannot_delete']    = 'শুধুমাত্র খসড়া,
 $lang['ams_po_no_lines']         = 'অন্তত একটি লাইন যোগ করুন।';
 $lang['ams_po_line_invalid']     = 'লাইন %s: বিবরণ, ০-এর বেশি পরিমাণ এবং মূল্য লিখুন।';
 $lang['ams_po_asset_qty_whole']  = 'লাইন %s: সম্পদের পরিমাণ অবশ্যই পূর্ণসংখ্যা হতে হবে।';
-$lang['ams_po_item_required']    = 'লাইন %s: স্টক আইটেম নির্বাচন করুন।';
 $lang['ams_po_category_required'] = 'লাইন %s: সম্পদের ক্যাটাগরি নির্বাচন করুন।';
 $lang['ams_po_receive_too_much'] = '%s: গ্রহণের জন্য মাত্র %s বাকি আছে।';
 $lang['ams_po_serial_count']     = '%s: %s ইউনিট কিন্তু %sটি সিরিয়াল নম্বর।';
@@ -1040,11 +918,6 @@ $lang['ams_hb_alert_sync_fail'] = 'রিফ্রেশ ব্যর্থত�
 $lang['ams_hb_alert_sync_fail_help'] = 'HostBill পড়া না গেলে একটি সতর্কতা, আবার কাজ করলে একটি।';
 $lang['ams_hb_alert_email'] = 'ইমেইলও পাঠান';
 $lang['ams_hb_alert_email_help'] = 'বেল নোটিফিকেশন সবসময় যায়; এটি "Low / out-of-stock alert" ও "System alert" ইমেইল টেমপ্লেট যোগ করে।';
-$lang['ams_hb_alert_recipients'] = 'সতর্কতা পাঠান';
-$lang['ams_hb_recipients_own'] = 'এখানে বাছাই করা কর্মীদের';
-$lang['ams_hb_recipients_stock'] = 'Perfex স্টক সতর্কতার একই কর্মীদের';
-$lang['ams_setting_sellable_enabled'] = 'স্টক আইটেমে "বিক্রয়যোগ্য" চিহ্ন ব্যবহার';
-$lang['ams_setting_sellable_enabled_help'] = 'স্টক আইটেমে (ফর্ম, আইটেম পেজ, ফিল্টার, ইমপোর্ট) নিজস্ব ব্যবহারের জন্য "বিক্রয়যোগ্য" টিক বক্স দেখায়। এর HostBill-এর সাথে কোনো সংযোগ নেই।';
 
 // ─── Legacy import (Phase 2) ──────────────────────────────────────────────
 $lang['ams_legacy_import']               = 'পুরোনো ডেটা ইমপোর্ট';
@@ -1101,7 +974,6 @@ $lang['ams_reports']                    = 'রিপোর্ট';
 $lang['ams_reports_intro']              = 'প্রতিটি রিপোর্ট Perfex-এর সাধারণ টেবিল: খোঁজা, সাজানো, ফিল্টার, ফিল্টার সংরক্ষণ এবং Excel, CSV, PDF-এ এক্সপোর্ট বা প্রিন্ট করা যায়।';
 $lang['ams_reports_group_assets']       = 'সম্পদ';
 $lang['ams_reports_group_finance']      = 'আর্থিক';
-$lang['ams_reports_group_stock']        = 'স্টক ও বিক্রয়';
 $lang['ams_reports_group_operations']   = 'কার্যক্রম';
 $lang['ams_report_register']            = 'সম্পদ রেজিস্টার';
 $lang['ams_report_register_desc']       = 'সব সম্পদ - স্ট্যাটাস, ধারণকারী, বিভাগ, অবস্থান, মূল্য ও ওয়ারেন্টিসহ।';
@@ -1117,8 +989,6 @@ $lang['ams_report_depreciation_desc']   = 'আগামী মাসগুলো
 $lang['ams_report_maintenance_cost']    = 'রক্ষণাবেক্ষণ ব্যয়';
 $lang['ams_report_maintenance_cost_desc'] = 'সম্পন্ন রক্ষণাবেক্ষণের ব্যয় ও ডাউনটাইম - ক্যাটাগরি, সরবরাহকারী, ধরন বা সম্পদ অনুযায়ী।';
 $lang['ams_report_disposals_desc']      = 'নিষ্পত্তিকৃত সম্পদ - প্রাপ্ত অর্থ, বই মূল্য ও লাভ / ক্ষতিসহ।';
-$lang['ams_report_levels_desc']         = 'প্রতিটি আইটেম ও অবস্থানে হাতে থাকা, সংরক্ষিত ও উপলব্ধ স্টক, মূল্যসহ।';
-$lang['ams_report_movements_desc']      = 'প্রতিটি স্টক গ্রহণ, ইস্যু, স্থানান্তর, সমন্বয় ও বিক্রয়।';
 $lang['ams_report_hb_desc'] = 'স্বল্প / শেষ স্টক অবস্থাসহ HostBill প্রোডাক্টের স্টক।';
 $lang['ams_report_audits_desc']         = 'অডিট কার্যক্রম - পাওয়া, ভুল স্থানে ও নিখোঁজ সম্পদসহ।';
 $lang['ams_report_maintenance_desc']    = 'সব রক্ষণাবেক্ষণ কাজ, চলমান ও বিলম্বিত।';
@@ -1142,8 +1012,7 @@ $lang['ams_date_to']                    = 'শেষ';
 $lang['ams_apply']                      = 'প্রয়োগ করুন';
 
 $lang['ams_import']                     = 'ইমপোর্ট';
-$lang['ams_import_type_items']          = 'স্টক আইটেম (আনুষঙ্গিক সামগ্রী, ব্যবহার্য সামগ্রী, স্টক)';
-$lang['ams_import_intro']               = 'CSV বা Excel (.xlsx) ফাইল থেকে সম্পদ, স্টক আইটেম বা সরবরাহকারী ইমপোর্ট করুন। প্রিভিউ যাচাই না করা পর্যন্ত কিছুই সংরক্ষণ হয় না।';
+$lang['ams_import_intro']               = 'CSV বা Excel (.xlsx) ফাইল থেকে সম্পদ বা সরবরাহকারী ইমপোর্ট করুন। প্রিভিউ যাচাই না করা পর্যন্ত কিছুই সংরক্ষণ হয় না।';
 $lang['ams_import_step1']               = 'ফাইল আপলোড করুন (প্রথম সারি = কলামের নাম, সর্বোচ্চ %s সারি, %s MB)।';
 $lang['ams_import_step2']               = 'কলামগুলো ফিল্ডের সাথে মিলিয়ে দিন (নাম স্পষ্ট হলে স্বয়ংক্রিয়ভাবে মেলে)।';
 $lang['ams_import_step3']               = 'প্রিভিউ: প্রতিটি সারি ফর্মের একই নিয়মে যাচাই করা হয়।';
@@ -1171,12 +1040,10 @@ $lang['ams_import_options']             = 'বিকল্প';
 $lang['ams_import_existing']            = 'যে রেকর্ড আগে থেকেই আছে';
 $lang['ams_import_mode_skip']           = 'বাদ দিন';
 $lang['ams_import_mode_update_assets']  = 'আপডেট করুন (অ্যাসেট ট্যাগ দিয়ে মেলানো)';
-$lang['ams_import_mode_update_items']   = 'আপডেট করুন (SKU দিয়ে মেলানো)';
 $lang['ams_import_mode_update_suppliers'] = 'আপডেট করুন (নাম দিয়ে মেলানো)';
 $lang['ams_import_date_format']         = 'ফাইলের তারিখের ফরম্যাট';
 $lang['ams_import_date_help']           = 'YYYY-MM-DD তারিখ ও Excel-এর আসল তারিখ ঘর সবসময় কাজ করে।';
 $lang['ams_import_create_missing']      = 'না থাকা ক্যাটাগরি, ব্র্যান্ড, মডেল, অবস্থান ও সরবরাহকারী তৈরি করুন';
-$lang['ams_import_default_kind']        = 'ফাইলে ধরনের কলাম না থাকলে আইটেমের ধরন';
 $lang['ams_import_notify']              = 'যাদের কাছে সম্পদ চেক আউট হচ্ছে সেই কর্মীদের জানান (প্রাপ্তি স্বীকৃতির অনুরোধ + ইমেইল)';
 $lang['ams_import_preview']             = 'প্রিভিউ';
 $lang['ams_import_run']                 = '%s সারি ইমপোর্ট করুন';
@@ -1187,7 +1054,7 @@ $lang['ams_import_preview_title']       = 'প্রিভিউ (এখনও �
 $lang['ams_import_result_title']        = 'ইমপোর্ট সম্পন্ন';
 $lang['ams_import_preview_help']        = 'ইমপোর্টের সময় ত্রুটিযুক্ত সারি বাদ যাবে। ফাইলে সংশোধন করে আবার ইমপোর্ট করুন (বিদ্যমান সারি তখন বাদ বা আপডেট হবে)।';
 $lang['ams_import_row']                 = 'সারি';
-$lang['ams_import_reference']           = 'ট্যাগ / SKU / নাম';
+$lang['ams_import_reference']           = 'ট্যাগ / নাম';
 $lang['ams_import_message']             = 'বার্তা';
 $lang['ams_import_status_create']       = 'নতুন';
 $lang['ams_import_status_update']       = 'আপডেট';
@@ -1204,9 +1071,7 @@ $lang['ams_import_invalid_value']       = 'অবৈধ %s: "%s"।';
 $lang['ams_import_invalid_date']        = '%s-এ অবৈধ তারিখ: "%s"।';
 $lang['ams_import_invalid_number']      = '%s-এ অবৈধ সংখ্যা: "%s"।';
 $lang['ams_import_will_create']         = 'নতুন %s "%s" তৈরি হবে।';
-$lang['ams_import_qty_ignored']         = 'বিদ্যমান আইটেমের পরিমাণ উপেক্ষা করা হয়েছে (গ্রহণ / সমন্বয় ব্যবহার করুন)।';
 $lang['ams_import_assigned_email']      = 'যাকে দেওয়া হয়েছে (কর্মীর ইমেইল)';
-$lang['ams_import_opening_location']    = 'প্রারম্ভিক স্টকের অবস্থান';
 $lang['ams_import_history_note']        = 'ফাইল থেকে ইমপোর্ট করা';
 
 // ─── Validation / integrity messages (review 28-Sep-2026) ─────────────────
@@ -1233,7 +1098,6 @@ $lang['ams_setting_invalid'] = 'সংরক্ষিত হয়নি: %s-এ
 $lang['ams_hb_url_changed_key_required'] = 'HostBill URL পরিবর্তন হয়নি: URL পরিবর্তনের সময় API কী আবার দিন (সংরক্ষিত কী শুধু সংরক্ষিত ঠিকানায় পাঠানো হয়)।';
 $lang['ams_scan_confirm_record'] = '%s কি অডিট %s-এ রেকর্ড করবেন?';
 $lang['ams_scan_record'] = 'অডিটে রেকর্ড করুন';
-$lang['ams_req_qty_above_requested'] = 'অনুরোধের (%s) চেয়ে বেশি।';
 $lang['ams_import_already_running'] = 'এই ফাইলটি ইতিমধ্যে ইমপোর্ট হচ্ছে (বা হয়েছে)। আবার ইমপোর্টের আগে ফলাফল দেখুন।';
 $lang['ams_import_file_too_large'] = 'আনপ্যাক করার পর স্প্রেডশিটটি অনেক বড়। ছোট ছোট ফাইলে ভাগ করুন।';
 $lang['ams_hb_refresh_running'] = 'একটি HostBill রিফ্রেশ ইতিমধ্যে চলছে। একটু পরে আবার চেষ্টা করুন।';
@@ -1269,21 +1133,8 @@ $lang['ams_setup_changelog_help'] = 'কে ক্যাটাগরি, ব্�
 $lang['ams_setup_record_type'] = 'রেকর্ডের ধরন';
 $lang['ams_by'] = 'যিনি করেছেন';
 $lang['ams_notify_request_cancelled'] = 'অনুরোধ %s বাতিল করেছেন %s';
-$lang['ams_import_notify_items'] = 'ইমপোর্ট করা প্রারম্ভিক স্টকের জন্য স্বল্প স্টক সতর্কতা পাঠান';
 $lang['ams_icon_none'] = 'কোনো আইকন নেই';
 $lang['ams_req_no_available_assets_long'] = 'এখন কোনো সম্পদ দেওয়া যাবে না: সম্পদটি ইন স্টোরে (ডিপ্লয়যোগ্য স্ট্যাটাস), চেক-আউট না করা ও মুছে না ফেলা অবস্থায় থাকতে হবে। ইন স্টোর স্ট্যাটাসে সম্পদ যোগ করুন, অথবা এই অনুরোধ থেকে ক্রয় আদেশ দিয়ে কিনুন - তারপর এই পেজ রিলোড করুন।';
-$lang['ams_req_no_available_items_long'] = 'এই ধরনের কোনো সক্রিয় আইটেম এখনও নেই। আইটেম তৈরি করে স্টক গ্রহণ করুন (Accessories / Consumables / Stock Items), অথবা এই অনুরোধ থেকে ক্রয় আদেশ দিয়ে কিনুন।';
-$lang['ams_item_checked_out_success'] = '%s-কে চেক-আউট করা হয়েছে';
 
-// ─── Issue reports on accessories ────────────────────────────────────────
-$lang['ams_req_issue_item'] = 'সম্পদ বা এক্সেসরি';
-$lang['ams_req_issue_held'] = '%s আছে';
-$lang['ams_req_issue_held_since'] = 'যখন থেকে কাছে আছে';
-$lang['ams_req_issue_qty_above_held'] = 'এই এক্সেসরির মাত্র %s আপনার কাছে আছে।';
-$lang['ams_req_issue_no_longer_held'] = 'অনুরোধকারীর কাছে এখন এত সংখ্যক এক্সেসরি নেই; "write off" টিক তুলে দিন বা আগে চেক-আউটটি দেখুন।';
-$lang['ams_req_issue_returned_faulty'] = 'ত্রুটিপূর্ণ হিসেবে ফেরত (%s)';
-$lang['ams_req_issue_replacement'] = '%s-এর বদলি';
-$lang['ams_req_issue_resolve_help'] = 'ত্রুটিপূর্ণ এক্সেসরি (%s টি)। কী করবেন বাছাই করুন; ঠিক করা হলে ও কিছু বদল না হলে দুটোই টিক ছাড়া রাখুন।';
-$lang['ams_req_issue_write_off'] = '%s টি ত্রুটিপূর্ণ ইউনিট ফেরত নিন ও ক্ষতিগ্রস্ত হিসেবে বাদ দিন';
-$lang['ams_req_issue_replace'] = 'বদলি হিসেবে স্টক থেকে %s টি ভালো ইউনিট দিন';
-$lang['ams_req_issue_replace_from'] = 'যে অবস্থান থেকে বদলি';
+// ─── Issue reports ─────────────────────────────────────────────────────────
+$lang['ams_req_issue_item'] = 'সম্পদ';

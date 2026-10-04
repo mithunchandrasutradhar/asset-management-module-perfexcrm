@@ -51,15 +51,13 @@ $tbl = '<table width="100%" cellspacing="0" cellpadding="6" border="0">
 
 foreach ($po->lines as $i => $l) {
     $desc = e($l['description']);
-    if ($l['line_type'] === 'item' && $l['sku']) {
-        $desc .= '<br /><span style="color:#777777;font-size:' . ($font_size - 1) . 'px;">' . e($l['sku']) . '</span>';
-    } elseif ($l['category_name']) {
+    if ($l['category_name']) {
         $desc .= '<br /><span style="color:#777777;font-size:' . ($font_size - 1) . 'px;">' . e($l['category_name']) . '</span>';
     }
     $tbl .= '<tr style="border-bottom:1px solid #ececec;">
         <td align="center">' . ($i + 1) . '</td>
         <td>' . $desc . '</td>
-        <td align="right">' . ams_qty($l['qty']) . ($l['unit'] ? ' ' . e($l['unit']) : '') . '</td>
+        <td align="right">' . ams_qty($l['qty']) . '</td>
         <td align="right">' . e(app_format_money($l['unit_cost'], $currency)) . '</td>
         <td align="right">' . e(app_format_money($l['qty'] * $l['unit_cost'], $currency)) . '</td>
     </tr>';

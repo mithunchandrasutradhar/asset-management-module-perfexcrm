@@ -17,7 +17,7 @@ class Ams_merge_fields extends App_merge_fields
         return [
             $field('Staff Firstname (recipient)', '{staff_firstname}', $all),
             $field('Staff Lastname (recipient)', '{staff_lastname}', $all),
-            $field('Asset / Item', '{ams_item}', $all),
+            $field('Asset', '{ams_item}', $all),
             $field('Details', '{ams_details}', $all),
             $field('Link', '{ams_link}', $all),
             $field('Status', '{ams_status}', ['ams-request-updated', 'ams-low-stock', 'ams-system-alert']),

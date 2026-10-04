@@ -2,11 +2,10 @@
 <?php init_head(); ?>
 <?php
 $canAssets   = staff_can('view', 'ams_assets') || staff_can('view_own', 'ams_assets');
-$canAcc      = staff_can('view', 'ams_accessories') || staff_can('view_own', 'ams_accessories');
 $canRequests = staff_can('create', 'ams_requests') || staff_can('view_own', 'ams_requests') || staff_can('view', 'ams_requests');
 $canCreate   = staff_can('create', 'ams_requests');
 $canLic      = staff_can('view', 'ams_licenses') || staff_can('view_own', 'ams_licenses');
-$firstTab    = $holdings['acceptances'] ? 'acceptances' : ($canAssets ? 'assets' : ($canAcc ? 'accessories' : 'requests'));
+$firstTab    = $holdings['acceptances'] ? 'acceptances' : ($canAssets ? 'assets' : 'requests');
 ?>
 <div id="wrapper">
     <div class="content">
@@ -17,7 +16,7 @@ $firstTab    = $holdings['acceptances'] ? 'acceptances' : ($canAssets ? 'assets'
                     <?php if ($canCreate) { ?>
                     <div class="tw-flex tw-gap-1">
                         <a href="#" class="btn btn-primary" onclick="ams_new_request('asset'); return false;"><i class="fa-regular fa-plus tw-mr-1"></i><?= _l('ams_req_new'); ?></a>
-                        <?php if ($my_assets || $my_checkouts) { ?>
+                        <?php if ($my_assets) { ?>
                         <a href="#" class="btn btn-default" onclick="ams_new_request('issue'); return false;"><i class="fa-solid fa-screwdriver-wrench tw-mr-1"></i><?= _l('ams_req_report_issue'); ?></a>
                         <?php } ?>
                     </div>
@@ -33,9 +32,6 @@ $firstTab    = $holdings['acceptances'] ? 'acceptances' : ($canAssets ? 'assets'
                         <ul class="nav nav-tabs nav-tabs-horizontal" role="tablist">
                             <?php if ($canAssets) { ?>
                             <li class="<?= $firstTab === 'assets' ? 'active' : ''; ?>"><a href="#tab_assets" data-toggle="tab"><?= _l('ams_assets'); ?> <span class="badge"><?= (int) $holdings['assets']; ?></span></a></li>
-                            <?php } ?>
-                            <?php if ($canAcc) { ?>
-                            <li class="<?= $firstTab === 'accessories' ? 'active' : ''; ?>"><a href="#tab_accessories" data-toggle="tab"><?= _l('ams_accessories'); ?> <span class="badge"><?= ams_qty($holdings['accessories']); ?></span></a></li>
                             <?php } ?>
                             <?php if ($canLic) { ?>
                             <li><a href="#tab_licenses" data-toggle="tab"><?= _l('ams_licenses'); ?></a></li>
@@ -54,14 +50,6 @@ $firstTab    = $holdings['acceptances'] ? 'acceptances' : ($canAssets ? 'assets'
                                 ], 'ams-my-assets'); ?>
                             </div>
                             <?php } ?>
-                            <?php if ($canAcc) { ?>
-                            <div class="tab-pane <?= $firstTab === 'accessories' ? 'active' : ''; ?>" id="tab_accessories">
-                                <?php render_datatable([
-                                    _l('ams_date'), _l('ams_item'), _l('ams_quantity'), _l('ams_returned'), _l('ams_outstanding'),
-                                    _l('ams_assigned_to'), _l('ams_department'), _l('ams_expected_return'), _l('ams_status'), _l('ams_done_by'),
-                                ], 'ams-my-checkouts'); ?>
-                            </div>
-                            <?php } ?>
                             <?php if ($canLic) { ?>
                             <div class="tab-pane" id="tab_licenses">
                                 <?php render_datatable([_l('ams_license'), _l('ams_assigned_to'), _l('ams_lic_assigned_at'), _l('ams_note'), _l('ams_lic_released'), _l('ams_done_by')], 'ams-my-licenses'); ?>
@@ -69,7 +57,7 @@ $firstTab    = $holdings['acceptances'] ? 'acceptances' : ($canAssets ? 'assets'
                             <?php } ?>
                             <div class="tab-pane <?= $firstTab === 'acceptances' ? 'active' : ''; ?>" id="tab_acceptances">
                                 <?php render_datatable([
-                                    _l('ams_date'), _l('ams_item'), _l('ams_item_kind'), _l('ams_status'), _l('ams_responded'), _l('ams_signed_name'), _l('ams_assigned_by'),
+                                    _l('ams_date'), _l('ams_asset'), _l('ams_status'), _l('ams_responded'), _l('ams_signed_name'), _l('ams_assigned_by'),
                                 ], 'ams-my-acceptances'); ?>
                             </div>
                             <?php if ($canRequests) { ?>
@@ -141,44 +129,18 @@ $firstTab    = $holdings['acceptances'] ? 'acceptances' : ($canAssets ? 'assets'
             <div class="modal-body">
                 <?= render_select('type', [
                     ['id' => 'asset', 'name' => _l('ams_req_type_asset')],
-                    ['id' => 'accessory', 'name' => _l('ams_req_type_accessory')],
-                    ['id' => 'consumable', 'name' => _l('ams_req_type_consumable')],
                     ['id' => 'issue', 'name' => _l('ams_req_type_issue')],
                 ], ['id', 'name'], 'ams_req_type', 'asset', [], [], '', '', false); ?>
                 <div class="ams-req-f ams-req-f-asset">
                     <?= render_select('category_id', $categories, ['id', 'name'], 'ams_category'); ?>
                 </div>
-                <div class="ams-req-f ams-req-f-accessory ams-req-f-consumable hide">
-                    <?php // Each option carries its kind, so the list only offers items of the chosen type. ?>
-                    <div class="form-group" app-field-wrapper="item_id">
-                        <label for="item_id" class="control-label"><?= _l('ams_item'); ?></label>
-                        <select name="item_id" id="item_id" class="selectpicker" data-width="100%" data-live-search="true" data-none-selected-text="<?= e(_l('dropdown_non_selected_tex')); ?>">
-                            <option value=""></option>
-                            <?php foreach ($items as $it) { ?>
-                            <option value="<?= (int) $it['id']; ?>" data-kind="<?= e($it['kind']); ?>"><?= e($it['name']); ?></option>
-                            <?php } ?>
-                        </select>
-                    </div>
-                </div>
                 <div class="ams-req-f ams-req-f-issue hide">
-                    <?php // Anything I hold: assets, and accessories (with how many I hold). ?>
                     <div class="form-group" app-field-wrapper="issue_ref">
                         <label for="issue_ref" class="control-label"><?= _l('ams_req_issue_item'); ?></label>
                         <select name="issue_ref" id="issue_ref" class="selectpicker" data-width="100%" data-live-search="true" data-none-selected-text="<?= e(_l('dropdown_non_selected_tex')); ?>">
                             <option value=""></option>
-                            <?php if ($my_assets) { ?>
-                            <optgroup label="<?= e(_l('ams_assets')); ?>">
-                                <?php foreach ($my_assets as $ma) { ?>
-                                <option value="asset:<?= (int) $ma['id']; ?>"><?= e($ma['asset_tag'] . ' - ' . $ma['name']); ?></option>
-                                <?php } ?>
-                            </optgroup>
-                            <?php } ?>
-                            <?php if ($my_checkouts) { ?>
-                            <optgroup label="<?= e(_l('ams_accessories')); ?>">
-                                <?php foreach ($my_checkouts as $mc) { ?>
-                                <option value="checkout:<?= (int) $mc['id']; ?>" data-held="<?= e(ams_qty($mc['outstanding'])); ?>"><?= e($mc['sku'] . ' - ' . $mc['name'] . ' (' . _l('ams_req_issue_held', ams_qty($mc['outstanding']) . ' ' . $mc['unit']) . ')'); ?></option>
-                                <?php } ?>
-                            </optgroup>
+                            <?php foreach ($my_assets as $ma) { ?>
+                            <option value="asset:<?= (int) $ma['id']; ?>"><?= e($ma['asset_tag'] . ' - ' . $ma['name']); ?></option>
                             <?php } ?>
                         </select>
                     </div>
@@ -186,7 +148,7 @@ $firstTab    = $holdings['acceptances'] ? 'acceptances' : ($canAssets ? 'assets'
                 <?= render_input('subject', '<small class="req text-danger">* </small>' . _l('ams_req_subject')); ?>
                 <?= render_textarea('description', 'ams_req_description'); ?>
                 <div class="row">
-                    <div class="col-md-4 ams-req-f ams-req-f-asset ams-req-f-accessory ams-req-f-consumable ams-req-qty">
+                    <div class="col-md-4 ams-req-f ams-req-f-asset">
                         <?= render_input('qty', 'ams_quantity', '1', 'number', ['min' => '1', 'step' => '1']); ?>
                     </div>
                     <div class="col-md-4">
@@ -223,9 +185,6 @@ $firstTab    = $holdings['acceptances'] ? 'acceptances' : ($canAssets ? 'assets'
         initDataTable('.table-ams-my-assets', admin_url + 'asset_management/my_assets/assets_table', [0], [0], {}, [1, 'asc'])
             .columns([0, 7, 8, 11, 12]).visible(false, false).columns.adjust();
         <?php } ?>
-        <?php if ($canAcc) { ?>
-        initDataTable('.table-ams-my-checkouts', admin_url + 'asset_management/my_assets/checkouts_table', [], [], {}, [0, 'desc']);
-        <?php } ?>
         initDataTable('.table-ams-my-acceptances', admin_url + 'asset_management/my_assets/acceptances_table', [], [], {}, [0, 'desc']);
         <?php if ($canLic) { ?>
         initDataTable('.table-ams-my-licenses', admin_url + 'asset_management/licenses/my_seats_table', [], [], {}, [2, 'desc']).column(1).visible(false, false);
@@ -244,31 +203,7 @@ $firstTab    = $holdings['acceptances'] ? 'acceptances' : ($canAssets ? 'assets'
         $('#ams-request-form select[name="type"]').on('change', function() {
             $('.ams-req-f').addClass('hide');
             $('.ams-req-f-' + $(this).val()).removeClass('hide');
-            // Accessory requests list accessories; consumable requests list consumables and stock items.
-            var kinds = { accessory: ['accessory'], consumable: ['consumable', 'stock'] }[$(this).val()] || [];
-            var itemSelect = $('#ams-request-form select[name="item_id"]');
-            itemSelect.find('option[data-kind]').each(function() {
-                var show = kinds.indexOf($(this).data('kind')) !== -1;
-                $(this).prop('disabled', !show).toggle(show);
-                if (!show && $(this).is(':selected')) {
-                    itemSelect.val('');
-                }
-            });
-            itemSelect.selectpicker('refresh');
-            ams_issue_qty();
         });
-        // Issue on an accessory: ask how many units are faulty (up to what is held).
-        function ams_issue_qty() {
-            var form = $('#ams-request-form');
-            if (form.find('select[name="type"]').val() !== 'issue') {
-                return;
-            }
-            var opt = form.find('select[name="issue_ref"] option:selected');
-            var isAccessory = String(opt.val() || '').indexOf('checkout:') === 0;
-            form.find('.ams-req-qty').toggleClass('hide', !isAccessory);
-            form.find('input[name="qty"]').attr('max', isAccessory ? opt.data('held') : null).val(1);
-        }
-        $('#ams-request-form select[name="issue_ref"]').on('change', ams_issue_qty);
         appValidateForm($('#ams-request-form'), { subject: 'required' }, function(form) {
             $.post(form.action, $(form).serialize()).done(function(r) {
                 r = typeof r === 'string' ? JSON.parse(r) : r;

@@ -70,7 +70,7 @@ return App_table::find('ams_requests')
         App_table_filter::new('status', 'MultiSelectRule')->label(_l('ams_status'))
             ->options(fn () => collect(['pending_dept', 'pending_manager', 'approved', 'rejected', 'fulfilled', 'cancelled'])->map(fn ($s) => ['value' => $s, 'label' => _l('ams_req_status_' . $s)])->all()),
         App_table_filter::new('type', 'MultiSelectRule')->label(_l('ams_req_type'))
-            ->options(fn () => collect(['asset', 'accessory', 'consumable', 'issue'])->map(fn ($s) => ['value' => $s, 'label' => _l('ams_req_type_' . $s)])->all()),
+            ->options(fn () => collect(['asset', 'issue'])->map(fn ($s) => ['value' => $s, 'label' => _l('ams_req_type_' . $s)])->all()),
         App_table_filter::new('priority', 'MultiSelectRule')->label(_l('ams_priority'))
             ->options(fn () => collect(['low', 'normal', 'high', 'urgent'])->map(fn ($s) => ['value' => $s, 'label' => _l('ams_priority_' . $s)])->all()),
         App_table_filter::new('department_id', 'MultiSelectRule')->label(_l('ams_department'))

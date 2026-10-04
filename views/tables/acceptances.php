@@ -13,7 +13,7 @@ return App_table::find('ams_acceptances')
 
         $aColumns = [
             $t . '.date_created as date_created',
-            'IF(' . $t . '.rel_type = "asset", CONCAT(a.asset_tag, " - ", a.name), CONCAT(ROUND(co.qty), " × ", i.sku, " - ", i.name)) as item_label',
+            'CONCAT(a.asset_tag, " - ", a.name) as item_label',
             $t . '.rel_type as rel_type',
             $t . '.status as status',
             $t . '.date_responded as date_responded',
@@ -23,16 +23,11 @@ return App_table::find('ams_acceptances')
 
         $join = [
             'LEFT JOIN ' . $p . 'ams_assets a ON ' . $t . '.rel_type = "asset" AND a.id = ' . $t . '.rel_id',
-            'LEFT JOIN ' . $p . 'ams_item_checkouts co ON ' . $t . '.rel_type = "accessory" AND co.id = ' . $t . '.rel_id',
-            'LEFT JOIN ' . $p . 'ams_items i ON i.id = co.item_id',
             'LEFT JOIN ' . $p . 'staff rs ON rs.staffid = ' . $t . '.requested_by',
         ];
 
         $where = ['AND ' . $t . '.staff_id = ' . (int) $staff_id];
-        // Accessory sign-offs belong to the accessories permission (own ones are always visible).
-        if ((int) $staff_id !== (int) get_staff_user_id() && ! ams_item_can('view', 'accessory')) {
-            $where[] = 'AND ' . $t . '.rel_type = "asset"';
-        }
+        $where[] = 'AND ' . $t . '.rel_type = "asset"';
         if ($filtersWhere = $this->getWhereFromRules()) {
             $where[] = $filtersWhere;
         }
@@ -43,7 +38,7 @@ return App_table::find('ams_acceptances')
 
         foreach ($result['rResult'] as $aRow) {
             $item = e($aRow['item_label']);
-            if ($aRow['rel_type'] === 'asset' && ams_can_view_asset(['assigned_type' => 'staff', 'assigned_id' => $staff_id])) {
+            if (ams_can_view_asset(['assigned_type' => 'staff', 'assigned_id' => $staff_id])) {
                 $item = '<a href="' . admin_url('asset_management/assets/view/' . $aRow['rel_id']) . '">' . $item . '</a>';
             }
 
@@ -57,7 +52,6 @@ return App_table::find('ams_acceptances')
             $row   = [];
             $row[] = e(_dt($aRow['date_created'])) . ($actions ? '<div class="row-options">' . implode(' | ', $actions) . '</div>' : '');
             $row[] = $item;
-            $row[] = e(_l($aRow['rel_type'] === 'asset' ? 'ams_asset' : 'ams_accessory'));
             $row[] = ams_acceptance_status_badge($aRow['status']);
             $row[] = e(_dt($aRow['date_responded']));
             $row[] = e($aRow['signed_name']);

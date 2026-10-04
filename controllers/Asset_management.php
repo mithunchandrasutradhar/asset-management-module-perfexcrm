@@ -17,11 +17,8 @@ class Asset_management extends AdminController
             access_denied('ams_assets');
         }
 
-        $this->load->model(AMS_MODULE_NAME . '/ams_inventory_model');
-
         $data['title']     = _l('ams_dashboard');
         $data['stats']     = $this->ams_assets_model->dashboard_stats();
-        $data['inventory'] = $this->ams_inventory_model->dashboard_stats();
 
         $this->load->view(AMS_MODULE_NAME . '/dashboard', $data);
     }
