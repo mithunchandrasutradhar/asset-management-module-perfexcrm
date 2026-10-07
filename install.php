@@ -666,6 +666,8 @@ $amsTemplates = [
         '<p>The licence <strong>{ams_item}</strong> expires on {ams_due_date}. {ams_details}</p><p><a href="{ams_link}">{ams_link}</a></p>'],
     ['ams-maintenance-assigned', 'Maintenance job assigned (to responsible staff)', 'Maintenance assigned to you: {ams_item}',
         '<p>Hi {staff_firstname},</p><p>You are responsible for the maintenance job <strong>{ams_details}</strong> on <strong>{ams_item}</strong>.</p><p>Due: {ams_due_date}<br>Responsible: {ams_responsible}</p><p><a href="{ams_link}">{ams_link}</a></p>'],
+    ['ams-maintenance-schedule-assigned', 'Maintenance schedule assigned (to responsible staff)', 'Maintenance schedule assigned to you: {ams_item}',
+        '<p>Hi {staff_firstname},</p><p>You are responsible for the maintenance schedule <strong>{ams_details}</strong> on <strong>{ams_item}</strong>.</p><p>Next due: {ams_due_date}<br>Responsible: {ams_responsible}</p><p>A maintenance job will be opened for you before each due date.</p><p><a href="{ams_link}">{ams_link}</a></p>'],
     ['ams-maintenance-overdue', 'Maintenance job overdue (to responsible staff)', 'Maintenance overdue: {ams_item}',
         '<p>Hi {staff_firstname},</p><p>The maintenance job <strong>{ams_details}</strong> on <strong>{ams_item}</strong> was due on {ams_due_date} and is not completed yet.</p><p>Responsible: {ams_responsible}</p><p><a href="{ams_link}">{ams_link}</a></p>'],
 ];

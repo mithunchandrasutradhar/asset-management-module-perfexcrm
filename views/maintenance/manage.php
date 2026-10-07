@@ -19,8 +19,8 @@ $mine    = ! $viewAll || $this->input->get('mine');
                         <a href="<?= admin_url('asset_management/maintenance' . ($mine ? '' : '?mine=1')); ?>" class="btn btn-default">
                             <i class="fa-regular fa-<?= $mine ? 'rectangle-list' : 'user'; ?> tw-mr-1"></i><?= $mine ? _l('ams_mt_all_jobs') : _l('ams_mt_my_jobs'); ?>
                         </a>
-                        <a href="<?= admin_url('asset_management/maintenance/schedules'); ?>" class="btn btn-default"><i class="fa-regular fa-calendar-check tw-mr-1"></i><?= _l('ams_mt_schedules'); ?></a>
                         <?php } ?>
+                        <a href="<?= admin_url('asset_management/maintenance/schedules' . ($mine ? '?mine=1' : '')); ?>" class="btn btn-default"><i class="fa-regular fa-calendar-check tw-mr-1"></i><?= $mine ? _l('ams_mt_my_schedules') : _l('ams_mt_schedules'); ?></a>
                         <?php if ($canEdit) { ?>
                         <a href="#" data-toggle="modal" data-target="#ams_mt_bulk_actions" class="hide bulk-actions-btn table-btn" data-table=".table-ams-maintenance"><?= _l('bulk_actions'); ?></a>
                         <?php } ?>

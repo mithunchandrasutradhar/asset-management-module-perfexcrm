@@ -640,13 +640,23 @@ class Ams_maintenance_model extends App_Model
     }
 
     /** SQL condition: the job (alias / table $jobCol) is the staff member's responsibility. */
-    public static function mine_sql($jobCol, $staffId)
+    public static function mine_sql($jobCol, $staffId, $relType = 'job')
     {
         $p       = db_prefix();
         $staffId = (int) $staffId;
+        $relType = $relType === 'schedule' ? 'schedule' : 'job';
 
-        return 'EXISTS (SELECT 1 FROM ' . $p . 'ams_maintenance_staff ms_m WHERE ms_m.rel_type = "job" AND ms_m.rel_id = ' . $jobCol
+        return 'EXISTS (SELECT 1 FROM ' . $p . 'ams_maintenance_staff ms_m WHERE ms_m.rel_type = "' . $relType . '" AND ms_m.rel_id = ' . $jobCol
             . ' AND (ms_m.staff_id = ' . $staffId . ' OR ms_m.department_id IN (SELECT departmentid FROM ' . $p . 'staff_departments WHERE staffid = ' . $staffId . ')))';
+    }
+
+    /** Does the staff member have maintenance schedules (directly or through a department)? */
+    public function has_schedules($staffId = null)
+    {
+        $staffId = (int) ($staffId ?: get_staff_user_id());
+
+        return (bool) $this->db->query('SELECT 1 FROM ' . $this->t('ams_maintenance_schedules') . ' s WHERE '
+            . self::mine_sql('s.id', $staffId, 'schedule') . ' LIMIT 1')->row();
     }
 
     public function can_view_job($job)
@@ -972,7 +982,23 @@ class Ams_maintenance_model extends App_Model
         if (! $s || ! $added || ! $s->active) {
             return;
         }
-        ams_notify($this->staff_ids_for($added), 'ams_notify_mt_schedule_assigned', [$s->title, $this->asset_label($s->asset_id), _d($s->next_due)], 'asset_management/maintenance/schedules');
+        $staffIds = $this->staff_ids_for($added);
+        $asset    = $this->asset_label($s->asset_id);
+        $link     = 'asset_management/maintenance/schedules?mine=1';
+        $who      = $this->responsible_label($this->responsible('schedule', $s->id));
+        ams_notify($staffIds, 'ams_notify_mt_schedule_assigned', [$s->title, $asset, _d($s->next_due)], $link);
+        foreach ($staffIds as $staffId) {
+            if ((int) $staffId === (int) get_staff_user_id()) {
+                continue;
+            }
+            ams_send_email('ams-maintenance-schedule-assigned', $staffId, [
+                '{ams_item}'        => $asset,
+                '{ams_details}'     => $s->title . ' - ' . _l('ams_mt_every', [(int) $s->interval_value, _l('ams_unit_' . $s->interval_unit)]),
+                '{ams_due_date}'    => _d($s->next_due),
+                '{ams_responsible}' => $who,
+                '{ams_link}'        => admin_url($link),
+            ]);
+        }
     }
 
     public function delete_schedule($id)

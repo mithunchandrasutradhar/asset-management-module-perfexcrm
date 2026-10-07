@@ -183,10 +183,14 @@ class Maintenance extends AdminController
 
     // ─── Schedules ────────────────────────────────────────────────────────
 
+    /** All schedules ("view"), or only the ones the staff member is responsible for (?mine=1, or no "view"). */
     public function schedules()
     {
-        $this->require_cap('view');
+        if (! $this->can_see_schedules()) {
+            access_denied('ams_maintenance');
+        }
 
+        $data['mine']        = staff_cant('view', 'ams_maintenance') || $this->input->get('mine');
         $data['title']       = _l('ams_mt_schedules');
         $data['table']       = App_table::find('ams_schedules');
         $data['types']       = $this->ams_maintenance_model->types();
@@ -198,10 +202,16 @@ class Maintenance extends AdminController
 
     public function schedules_table()
     {
-        if (staff_cant('view', 'ams_maintenance')) {
+        if (! $this->can_see_schedules()) {
             ajax_access_denied();
         }
-        App_table::find('ams_schedules')->output();
+        $mine = staff_cant('view', 'ams_maintenance') || $this->input->get('mine') ? (int) get_staff_user_id() : 0;
+        App_table::find('ams_schedules')->output(['mine' => $mine]);
+    }
+
+    private function can_see_schedules()
+    {
+        return ams_can_see_maintenance() || $this->ams_maintenance_model->has_schedules();
     }
 
     public function get_schedule($id)

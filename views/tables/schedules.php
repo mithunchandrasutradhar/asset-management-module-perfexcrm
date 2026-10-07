@@ -6,6 +6,9 @@ defined('BASEPATH') or exit('No direct script access allowed');
 
 return App_table::find('ams_schedules')
     ->outputUsing(function ($params) {
+        extract($params);
+        $CI = &get_instance();
+        $CI->load->model(AMS_MODULE_NAME . '/ams_maintenance_model');
         $p = db_prefix();
         $t = $p . 'ams_maintenance_schedules';
 
@@ -27,6 +30,9 @@ return App_table::find('ams_schedules')
         ];
 
         $where = [];
+        if (! empty($mine)) {
+            $where[] = 'AND ' . Ams_maintenance_model::mine_sql($t . '.id', (int) $mine, 'schedule');
+        }
         if ($filtersWhere = $this->getWhereFromRules()) {
             $where[] = $filtersWhere;
         }

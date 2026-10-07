@@ -5,7 +5,7 @@ $canAssets   = staff_can('view', 'ams_assets') || staff_can('view_own', 'ams_ass
 $canRequests = staff_can('create', 'ams_requests') || staff_can('view_own', 'ams_requests') || staff_can('view', 'ams_requests');
 $canCreate   = staff_can('create', 'ams_requests');
 $canLic      = staff_can('view', 'ams_licenses') || staff_can('view_own', 'ams_licenses');
-$canJobs     = $my_jobs['total'] > 0;
+$canJobs     = $my_jobs['total'] > 0 || $my_jobs['schedules'];
 $firstTab    = $holdings['acceptances'] ? 'acceptances' : ($canAssets ? 'assets' : ($canJobs ? 'jobs' : 'requests'));
 ?>
 <div id="wrapper">
@@ -66,6 +66,9 @@ $firstTab    = $holdings['acceptances'] ? 'acceptances' : ($canAssets ? 'assets'
                             </div>
                             <?php if ($canJobs) { ?>
                             <div class="tab-pane <?= $firstTab === 'jobs' ? 'active' : ''; ?>" id="tab_jobs">
+                                <?php if ($my_jobs['schedules']) { ?>
+                                <a href="<?= admin_url('asset_management/maintenance/schedules?mine=1'); ?>" class="btn btn-default btn-sm tw-mb-3"><i class="fa-regular fa-calendar-check tw-mr-1"></i><?= _l('ams_mt_my_schedules'); ?></a>
+                                <?php } ?>
                                 <?php render_datatable([
                                     '', '#', _l('ams_asset'), _l('ams_mt_title'), _l('ams_mt_type'), _l('ams_status'), _l('ams_mt_responsible'),
                                     _l('ams_mt_due_date'), _l('ams_mt_start_date'), _l('ams_mt_end_date'), _l('ams_supplier'), _l('ams_mt_cost'),

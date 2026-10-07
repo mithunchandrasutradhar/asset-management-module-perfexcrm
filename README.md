@@ -190,7 +190,7 @@ Everything lives in the **Assets** menu in the Perfex sidebar.
 
 ### Notifications and email
 
-Bell notifications, plus 12 editable email templates in **Setup → Email Templates → Asset Management**:
+Bell notifications, plus 13 editable email templates in **Setup → Email Templates → Asset Management**:
 
 - asset assigned;
 - acceptance declined;
@@ -202,6 +202,7 @@ Bell notifications, plus 12 editable email templates in **Setup → Email Templa
 - purchase order to supplier;
 - maintenance due;
 - maintenance assigned (to responsible staff);
+- maintenance schedule assigned (to responsible staff);
 - maintenance overdue (to responsible staff);
 - licence expiring.
 

@@ -5,7 +5,7 @@
     <div class="content">
         <div class="row">
             <div class="col-md-12">
-                <h4 class="tw-mt-0 tw-font-bold tw-text-xl tw-mb-3"><?= _l('ams_mt_schedules') . ams_help_icon(_l('ams_mt_schedules_help', (int) get_option('ams_maintenance_lead_days'))); ?></h4>
+                <h4 class="tw-mt-0 tw-font-bold tw-text-xl tw-mb-3"><?= _l('ams_mt_schedules') . ($mine ? ' <span class="text-muted tw-font-normal tw-text-base">- ' . _l('ams_mt_my_schedules') . '</span>' : '') . ams_help_icon(_l('ams_mt_schedules_help', (int) get_option('ams_maintenance_lead_days'))); ?></h4>
                 <div class="tw-mb-2">
                     <div class="_buttons sm:tw-space-x-1 rtl:sm:tw-space-x-reverse">
                         <?php if (staff_can('create', 'ams_maintenance')) { ?>
@@ -72,7 +72,7 @@
 <?php init_tail(); ?>
 <script>
     $(function() {
-        initDataTable('.table-ams-schedules', admin_url + 'asset_management/maintenance/schedules_table', [7], [7], {}, [4, 'asc']);
+        initDataTable('.table-ams-schedules', admin_url + 'asset_management/maintenance/schedules_table<?= $mine && staff_can('view', 'ams_maintenance') ? '?mine=1' : ''; ?>', [7], [7], {}, [4, 'asc']);
         $('#ams-sch-form').on('submit', function(e) {
             e.preventDefault();
             $.post(this.action, $(this).serialize()).done(function(r) {

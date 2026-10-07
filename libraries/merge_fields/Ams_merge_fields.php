@@ -10,7 +10,7 @@ class Ams_merge_fields extends App_merge_fields
 {
     public function build()
     {
-        $all = ['ams-asset-assigned', 'ams-acceptance-declined', 'ams-request-submitted', 'ams-request-updated', 'ams-overdue-return', 'ams-low-stock', 'ams-system-alert', 'ams-maintenance-due', 'ams-maintenance-assigned', 'ams-maintenance-overdue', 'ams-license-expiring', 'ams-purchase-order'];
+        $all = ['ams-asset-assigned', 'ams-acceptance-declined', 'ams-request-submitted', 'ams-request-updated', 'ams-overdue-return', 'ams-low-stock', 'ams-system-alert', 'ams-maintenance-due', 'ams-maintenance-assigned', 'ams-maintenance-schedule-assigned', 'ams-maintenance-overdue', 'ams-license-expiring', 'ams-purchase-order'];
 
         $field = fn ($name, $key, $templates) => ['name' => $name, 'key' => $key, 'available' => ['ams'], 'templates' => $templates];
 
@@ -25,8 +25,8 @@ class Ams_merge_fields extends App_merge_fields
             $field('Action text', '{ams_action_text}', ['ams-asset-assigned']),
             $field('Staff name (subject of the email)', '{ams_staff_name}', ['ams-acceptance-declined', 'ams-request-submitted']),
             $field('Request number', '{ams_request_no}', ['ams-request-submitted', 'ams-request-updated']),
-            $field('Due date', '{ams_due_date}', ['ams-overdue-return', 'ams-maintenance-due', 'ams-maintenance-assigned', 'ams-maintenance-overdue', 'ams-license-expiring']),
-            $field('Responsible staff', '{ams_responsible}', ['ams-maintenance-due', 'ams-maintenance-assigned', 'ams-maintenance-overdue']),
+            $field('Due date', '{ams_due_date}', ['ams-overdue-return', 'ams-maintenance-due', 'ams-maintenance-assigned', 'ams-maintenance-schedule-assigned', 'ams-maintenance-overdue', 'ams-license-expiring']),
+            $field('Responsible staff', '{ams_responsible}', ['ams-maintenance-due', 'ams-maintenance-assigned', 'ams-maintenance-schedule-assigned', 'ams-maintenance-overdue']),
             $field('PO number', '{ams_po_number}', ['ams-purchase-order']),
             $field('Supplier name', '{ams_supplier}', ['ams-purchase-order']),
             $field('Company name', '{ams_company}', ['ams-purchase-order']),

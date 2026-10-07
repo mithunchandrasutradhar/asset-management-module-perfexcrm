@@ -1206,3 +1206,4 @@ $lang['ams_mt_resp_staff'] = 'Responsible staff';
 $lang['ams_mt_resp_staff_help'] = 'The staff who carry out and follow up the job. Without a department every active staff member is listed; with departments, only their members.';
 $lang['ams_mt_resp_whole_department'] = 'Whole department responsible:';
 $lang['ams_mt_staff_not_in_department'] = '%s is not a member of the chosen departments.';
+$lang['ams_mt_my_schedules'] = 'My schedules';

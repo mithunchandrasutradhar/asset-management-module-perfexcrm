@@ -1213,3 +1213,4 @@ $lang['ams_mt_resp_staff'] = 'দায়িত্বপ্রাপ্ত ক�
 $lang['ams_mt_resp_staff_help'] = 'যে কর্মীরা কাজটি সম্পন্ন ও তদারকি করবেন। বিভাগ না বাছাই করলে সব সক্রিয় কর্মী, বিভাগ বাছাই করলে শুধু সেগুলোর সদস্যরা তালিকায় থাকে।';
 $lang['ams_mt_resp_whole_department'] = 'পুরো বিভাগ দায়িত্বপ্রাপ্ত:';
 $lang['ams_mt_staff_not_in_department'] = '%s বাছাই করা কোনো বিভাগের সদস্য নন।';
+$lang['ams_mt_my_schedules'] = 'আমার সূচি';

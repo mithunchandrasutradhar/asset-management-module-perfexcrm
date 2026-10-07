@@ -33,7 +33,7 @@ class My_assets extends AdminController
         $this->load->model(AMS_MODULE_NAME . '/ams_maintenance_model');
         $mine            = Ams_maintenance_model::mine_sql('m.id', $me);
         $data['my_jobs'] = (array) $this->db->query('SELECT COUNT(*) total, SUM(m.status IN ("scheduled", "in_progress")) open FROM ' . db_prefix() . 'ams_maintenance m WHERE ' . $mine)->row_array();
-        $data['my_jobs'] = ['total' => (int) $data['my_jobs']['total'], 'open' => (int) $data['my_jobs']['open']];
+        $data['my_jobs'] = ['total' => (int) $data['my_jobs']['total'], 'open' => (int) $data['my_jobs']['open'], 'schedules' => $this->ams_maintenance_model->has_schedules($me)];
         $data['mt_modal'] = ['assets' => [], 'types' => $this->ams_maintenance_model->types(), 'suppliers' => ams_supplier_options(true), 'request' => null, 'fixed_asset' => null, 'responsible' => $this->ams_maintenance_model->responsible_options()];
 
         $this->load->view(AMS_MODULE_NAME . '/my_assets/index', $data);
