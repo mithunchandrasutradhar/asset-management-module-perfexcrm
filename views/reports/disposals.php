@@ -36,6 +36,7 @@ $fmt = fn ($v, $cur) => e(app_format_money((float) $v, $currencies[$cur] ?? get_
                     _l('ams_disp_recipient'), _l('ams_disp_reference'), _l('ams_disp_book_value'), _l('ams_disp_proceeds'),
                     _l('ams_disp_gain_loss'), _l('ams_done_by'),
                 ], 'ams-disposals', [], [
+                            'id' => $table->id(),
                     'data-last-order-identifier' => 'ams-disposals',
                     'data-default-order'         => get_table_last_order('ams-disposals'),
                 ]); ?>

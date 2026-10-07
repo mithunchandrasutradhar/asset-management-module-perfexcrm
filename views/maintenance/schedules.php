@@ -23,7 +23,7 @@
                     <div class="panel-body panel-table-full">
                         <?php render_datatable([
                             _l('ams_asset'), _l('ams_mt_title'), _l('ams_mt_type'), _l('ams_mt_interval'), _l('ams_mt_next_due'), _l('ams_mt_last_done'), _l('ams_mt_vendor'), _l('ams_mt_responsible'), _l('ams_active'),
-                        ], 'ams-schedules'); ?>
+                        ], 'ams-schedules', [], ['id' => $table->id()]); ?>
                     </div>
                 </div>
             </div>

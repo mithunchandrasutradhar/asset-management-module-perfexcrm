@@ -23,6 +23,7 @@
                             _l('ams_req_no'), _l('ams_date'), _l('ams_requester'), _l('ams_department'), _l('ams_req_type'),
                             _l('ams_req_subject'), _l('ams_quantity'), _l('ams_priority'), _l('ams_needed_by'), _l('ams_status'),
                         ], 'ams-requests', [], [
+                            'id' => $table->id(),
                             'data-last-order-identifier' => 'ams-requests',
                             'data-default-order'         => get_table_last_order('ams-requests'),
                         ]); ?>

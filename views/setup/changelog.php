@@ -19,6 +19,7 @@
                         <?php render_datatable([
                             _l('ams_date'), _l('ams_setup_record_type'), _l('ams_name'), _l('ams_action'), _l('ams_changes'), _l('ams_by'),
                         ], 'ams-setup-log', [], [
+                            'id' => $table->id(),
                             'data-last-order-identifier' => 'ams-setup-log',
                             'data-default-order'         => get_table_last_order('ams-setup-log'),
                         ]); ?>

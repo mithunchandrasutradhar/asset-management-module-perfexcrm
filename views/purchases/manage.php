@@ -30,6 +30,7 @@
                             _l('ams_purchase_cost'),
                             _l('ams_warranty'),
                         ], 'ams-purchases', [], [
+                            'id' => $table->id(),
                             'data-last-order-identifier' => 'ams-purchases',
                             'data-default-order'         => get_table_last_order('ams-purchases'),
                         ]); ?>

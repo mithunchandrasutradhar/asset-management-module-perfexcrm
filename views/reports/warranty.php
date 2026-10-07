@@ -16,6 +16,7 @@
                     _l('ams_warranty'), _l('ams_warranty_days_left'), _l('ams_asset_tag'), _l('ams_asset_name'), _l('ams_category'),
                     _l('ams_serial_no'), _l('ams_warranty_provider'), _l('ams_warranty_start'), _l('ams_assigned_to'), _l('ams_location'),
                 ], 'ams-warranty', [], [
+                            'id' => $table->id(),
                     'data-last-order-identifier' => 'ams-warranty',
                     'data-default-order'         => get_table_last_order('ams-warranty'),
                 ]); ?>

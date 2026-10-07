@@ -23,6 +23,7 @@
                             _l('ams_po_number'), _l('ams_po_order_date'), _l('ams_supplier'), _l('ams_po_lines'),
                             _l('ams_po_total'), _l('ams_po_expected_date'), _l('ams_status'), _l('ams_created_by'),
                         ], 'ams-pos', [], [
+                            'id' => $table->id(),
                             'data-last-order-identifier' => 'ams-pos',
                             'data-default-order'         => get_table_last_order('ams-pos'),
                         ]); ?>

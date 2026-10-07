@@ -102,6 +102,7 @@ $lastRun = (int) get_option('ams_last_dep_run');
                     _l('ams_purchase_date'), _l('ams_purchase_cost'), _l('ams_dep_method'), _l('ams_dep_life_months'),
                     _l('ams_dep_accumulated'), _l('ams_dep_book_value'), _l('ams_status'),
                 ], 'ams-valuation', [], [
+                            'id' => $table->id(),
                     'data-last-order-identifier' => 'ams-valuation',
                     'data-default-order'         => get_table_last_order('ams-valuation'),
                 ]); ?>

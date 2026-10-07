@@ -16,6 +16,7 @@
                     _l('ams_date'), _l('ams_asset_tag'), _l('ams_asset_name'), _l('ams_action'), _l('ams_status'),
                     _l('ams_assigned_to'), _l('ams_location'), _l('ams_department'), _l('ams_note'), _l('ams_done_by'),
                 ], 'ams-history-all', [], [
+                            'id' => $table->id(),
                     'data-last-order-identifier' => 'ams-history-all',
                     'data-default-order'         => get_table_last_order('ams-history-all'),
                 ]); ?>

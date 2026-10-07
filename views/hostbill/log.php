@@ -17,7 +17,7 @@
                         <?php render_datatable([
                             _l('ams_date'), _l('ams_hb_direction'), _l('ams_hb_api_call'), _l('ams_status'),
                             _l('ams_hb_http'), _l('ams_hb_duration'), _l('ams_hb_error'), _l('ams_done_by'),
-                        ], 'ams-hb-log'); ?>
+                        ], 'ams-hb-log', [], ['id' => $table->id()]); ?>
                     </div>
                 </div>
             </div>

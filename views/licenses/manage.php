@@ -23,6 +23,7 @@
                             _l('ams_lic_name'), _l('ams_lic_manufacturer'), _l('ams_lic_type'), _l('ams_lic_seats_used'), _l('ams_lic_seats_free'),
                             _l('ams_lic_expiry'), _l('ams_supplier'), _l('ams_purchase_cost'), _l('ams_active'),
                         ], 'ams-licenses', [], [
+                            'id' => $table->id(),
                             'data-last-order-identifier' => 'ams-licenses',
                             'data-default-order'         => get_table_last_order('ams-licenses'),
                         ]); ?>

@@ -23,6 +23,7 @@
                             _l('ams_assign_type_staff'), _l('ams_department'), _l('ams_assets'),
                             _l('ams_overdue'), _l('ams_acc_pending_short'), _l('ams_open_requests'), _l('ams_active'),
                         ], 'ams-people', [], [
+                            'id' => $table->id(),
                             'data-last-order-identifier' => 'ams-people',
                             'data-default-order'         => get_table_last_order('ams-people'),
                         ]); ?>

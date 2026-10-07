@@ -33,6 +33,7 @@ $tile = function ($label, $value, $cls = '') {
                     _l('ams_hb_product'), _l('ams_hb_group'), _l('ams_hb_hostbill_qty'), _l('ams_hb_low_level'),
                     _l('ams_status'), _l('ams_hb_visible'), _l('ams_hb_last_refreshed'),
                 ], 'ams-hb-inventory', [], [
+                            'id' => $table->id(),
                     'data-last-order-identifier' => 'ams-hb-inventory',
                     'data-default-order'         => get_table_last_order('ams-hb-inventory'),
                 ]); ?>

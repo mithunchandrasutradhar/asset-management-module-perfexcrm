@@ -96,7 +96,7 @@ $tile  = fn ($key, $n, $cls = '') => '<div class="col-md-2 col-sm-4 col-xs-6"><d
                 <?php render_datatable([
                     _l('ams_asset_tag'), _l('ams_asset_name'), _l('ams_category'), _l('ams_audit_expected_location'), _l('ams_audit_found_at'),
                     _l('ams_audit_result'), _l('ams_condition'), _l('ams_note'), _l('ams_audit_scanned_by'), _l('ams_audit_scanned_at'),
-                ], 'ams-audit-lines'); ?>
+                ], 'ams-audit-lines', [], ['id' => $table->id()]); ?>
             </div>
         </div>
         <?php } ?>

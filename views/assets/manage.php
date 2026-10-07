@@ -81,6 +81,7 @@
                         }
 
                         render_datatable($table_data, 'ams-assets', [], [
+                            'id' => $table->id(),
                             'data-last-order-identifier' => 'ams-assets',
                             'data-default-order'         => get_table_last_order('ams-assets'),
                         ]);

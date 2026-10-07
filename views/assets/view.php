@@ -233,7 +233,7 @@ if ($a->source === 'gift') {
                                     _l('ams_department'),
                                     _l('ams_note'),
                                     _l('ams_done_by'),
-                                ], 'ams-history'); ?>
+                                ], 'ams-history', [], ['id' => $historyTable->id()]); ?>
                             </div>
 
                             <!-- Change log -->

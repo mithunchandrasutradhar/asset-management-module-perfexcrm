@@ -28,6 +28,7 @@
                 <div class="panel_s">
                     <div class="panel-body panel-table-full">
                         <?php render_datatable(ams_setup_table_headings($entity), 'ams-setup', [], [
+                            'id' => $table->id(),
                             'data-last-order-identifier' => 'ams-setup-' . $entity,
                             'data-default-order'         => get_table_last_order('ams-setup-' . $entity),
                         ]); ?>

@@ -41,6 +41,7 @@ $mine    = ! $viewAll || $this->input->get('mine');
                             '#', _l('ams_asset'), _l('ams_mt_title'), _l('ams_mt_type'), _l('ams_status'), _l('ams_mt_responsible'),
                             _l('ams_mt_due_date'), _l('ams_mt_start_date'), _l('ams_mt_end_date'), _l('ams_supplier'), _l('ams_mt_cost'),
                         ], 'ams-maintenance', [], [
+                            'id' => $table->id(),
                             'data-last-order-identifier' => 'ams-maintenance',
                             'data-default-order'         => get_table_last_order('ams-maintenance'),
                         ]); ?>

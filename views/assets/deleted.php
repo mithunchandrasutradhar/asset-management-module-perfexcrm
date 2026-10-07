@@ -18,6 +18,7 @@
                     _l('ams_asset_tag'), _l('ams_asset_name'), _l('ams_category'), _l('ams_serial_no'),
                     _l('ams_date_deleted'), _l('ams_deleted_by'), _l('ams_delete_reason'),
                 ], 'ams-assets-deleted', [], [
+                            'id' => $table->id(),
                     'data-last-order-identifier' => 'ams-assets-deleted',
                     'data-default-order'         => get_table_last_order('ams-assets-deleted'),
                 ]); ?>

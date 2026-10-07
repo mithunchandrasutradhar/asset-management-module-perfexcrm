@@ -23,6 +23,7 @@
                             _l('ams_audit_no'), _l('ams_audit_title'), _l('ams_audit_scope'), _l('ams_status'), _l('ams_audit_due_date'),
                             _l('ams_audit_progress'), _l('ams_audit_result_missing'), _l('ams_audit_completed_at'), _l('ams_audit_next_date'),
                         ], 'ams-audits', [], [
+                            'id' => $table->id(),
                             'data-last-order-identifier' => 'ams-audits',
                             'data-default-order'         => get_table_last_order('ams-audits'),
                         ]); ?>
