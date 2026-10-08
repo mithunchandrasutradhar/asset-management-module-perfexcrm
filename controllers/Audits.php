@@ -65,7 +65,7 @@ class Audits extends AdminController
         $data['title']     = $audit->audit_no . ' - ' . $audit->title;
         $data['audit']     = $audit;
         $data['locations'] = ams_location_options(true);
-        $data['scanning']  = (int) $this->session->userdata('ams_scan_audit') === (int) $audit->id;
+        $data['scanning']  = (int) get_staff_meta(get_staff_user_id(), 'ams_scan_audit') === (int) $audit->id;
         $this->load->view(AMS_MODULE_NAME . '/audits/view', $data);
     }
 
@@ -115,10 +115,11 @@ class Audits extends AdminController
         $this->require_cap('edit');
         $audit = $this->ams_audit_model->get($id);
         if ($on && $audit && $audit->status === 'in_progress') {
-            $this->session->set_userdata('ams_scan_audit', (int) $id);
+            // Stored per staff member, not per browser: turning it on from the PC also covers the phone.
+            update_staff_meta(get_staff_user_id(), 'ams_scan_audit', (int) $id);
             set_alert('success', _l('ams_audit_scan_mode_on'));
         } else {
-            $this->session->unset_userdata('ams_scan_audit');
+            delete_staff_meta(get_staff_user_id(), 'ams_scan_audit');
             set_alert('success', _l('ams_audit_scan_mode_off'));
         }
         redirect(admin_url('asset_management/audits/view/' . (int) $id));
@@ -128,8 +129,8 @@ class Audits extends AdminController
     {
         $this->require_json_cap('edit');
         $r = $this->ams_audit_model->complete($id, $this->input->post());
-        if ($r['success'] && (int) $this->session->userdata('ams_scan_audit') === (int) $id) {
-            $this->session->unset_userdata('ams_scan_audit');
+        if ($r['success'] && (int) get_staff_meta(get_staff_user_id(), 'ams_scan_audit') === (int) $id) {
+            delete_staff_meta(get_staff_user_id(), 'ams_scan_audit');
         }
         $this->json($r);
     }

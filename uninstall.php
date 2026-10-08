@@ -57,6 +57,8 @@ foreach ($tables as $table) {
 $CI->db->like('name', 'ams_', 'after');
 $CI->db->delete($p . 'options');
 
+$CI->db->where('meta_key', 'ams_scan_audit')->delete($p . 'user_meta');
+
 $CI->db->like('feature', 'ams_', 'after');
 $CI->db->delete($p . 'staff_permissions');
 

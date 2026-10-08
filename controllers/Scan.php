@@ -70,7 +70,9 @@ class Scan extends AdminController
         $audit = $this->active_audit();
         if ($audit) {
             if ($asset && ! $direct) {
+                // Send the one-tap confirm page now (exit alone would drop CodeIgniter's buffered output).
                 $this->show($asset, $code);
+                $this->output->_display();
                 exit;
             }
             if (! $asset) {
@@ -92,16 +94,16 @@ class Scan extends AdminController
         redirect(admin_url('asset_management/assets/view/' . $asset->id));
     }
 
-    /** The audit this staff member is scanning into (session), if still running and allowed. */
+    /** The audit this staff member is scanning into (staff setting, any device), if still running and allowed. */
     private function active_audit()
     {
-        $id = (int) $this->session->userdata('ams_scan_audit');
+        $id = (int) get_staff_meta(get_staff_user_id(), 'ams_scan_audit');
         if (! $id || staff_cant('edit', 'ams_audits')) {
             return null;
         }
         $audit = $this->ams_audit_model->get($id);
         if (! $audit || $audit->status !== 'in_progress') {
-            $this->session->unset_userdata('ams_scan_audit');
+            delete_staff_meta(get_staff_user_id(), 'ams_scan_audit');
 
             return null;
         }
