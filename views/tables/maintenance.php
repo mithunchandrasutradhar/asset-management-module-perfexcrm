@@ -136,7 +136,7 @@ return App_table::find('ams_maintenance')
         App_table_filter::new('mine', 'BooleanRule')->label(_l('ams_mt_my_jobs'))->raw(function ($value) {
             $sql = Ams_maintenance_model::mine_sql(db_prefix() . 'ams_maintenance.id', (int) get_staff_user_id());
 
-            return $value == '1' ? $sql : 'NOT ' . $sql;
+            return $value == '1' ? $sql : 'NOT COALESCE(' . $sql . ', 0)';
         }),
         App_table_filter::new('responsible_staff', 'MultiSelectRule')->label(_l('ams_mt_responsible'))
             ->options(fn () => collect(ams_staff_options())->map(fn ($s) => ['value' => $s['staffid'], 'label' => $s['firstname'] . ' ' . $s['lastname']])->all())
@@ -147,19 +147,19 @@ return App_table::find('ams_maintenance')
                 }
                 $sql = '(' . implode(' OR ', array_map(fn ($id) => Ams_maintenance_model::mine_sql(db_prefix() . 'ams_maintenance.id', $id), $ids)) . ')';
 
-                return $operator === 'not_in' ? 'NOT ' . $sql : $sql;
+                return $operator === 'not_in' ? 'NOT COALESCE(' . $sql . ', 0)' : $sql;
             }),
         App_table_filter::new('unassigned', 'BooleanRule')->label(_l('ams_mt_unassigned'))->raw(function ($value) {
             $t   = db_prefix() . 'ams_maintenance';
             $sql = 'NOT EXISTS (SELECT 1 FROM ' . db_prefix() . 'ams_maintenance_staff ms_u WHERE ms_u.rel_type = "job" AND ms_u.rel_id = ' . $t . '.id)';
 
-            return $value == '1' ? $sql : 'NOT (' . $sql . ')';
+            return $value == '1' ? $sql : 'NOT COALESCE(' . $sql . ', 0)';
         }),
         App_table_filter::new('not_acknowledged', 'BooleanRule')->label(_l('ams_mt_not_acknowledged'))->raw(function ($value) {
             $t   = db_prefix() . 'ams_maintenance';
             $sql = '(' . $t . '.status IN ("scheduled", "in_progress") AND ' . $t . '.acknowledged_at IS NULL AND ' . $t . '.assigned_at IS NOT NULL)';
 
-            return $value == '1' ? $sql : 'NOT ' . $sql;
+            return $value == '1' ? $sql : 'NOT COALESCE(' . $sql . ', 0)';
         }),
         App_table_filter::new('status', 'MultiSelectRule')->label(_l('ams_status'))
             ->options(fn () => collect(['scheduled', 'in_progress', 'completed', 'cancelled'])->map(fn ($s) => ['value' => $s, 'label' => _l('ams_mt_status_' . $s)])->all()),
@@ -176,6 +176,6 @@ return App_table::find('ams_maintenance')
             $t   = db_prefix() . 'ams_maintenance';
             $sql = '(' . $t . '.status IN ("scheduled", "in_progress") AND ' . $t . '.due_date < CURDATE())';
 
-            return $value == '1' ? $sql : 'NOT ' . $sql;
+            return $value == '1' ? $sql : 'NOT COALESCE(' . $sql . ', 0)';
         }),
     ]);

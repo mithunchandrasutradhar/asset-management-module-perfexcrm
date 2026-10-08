@@ -80,7 +80,7 @@ return App_table::find('ams_valuation')
             }
             $sql = db_prefix() . 'ams_assets.category_id IN (' . implode(',', $ids ?: [0]) . ')';
 
-            return $operator === 'in' ? $sql : 'NOT ' . $sql;
+            return $operator === 'in' ? $sql : 'NOT COALESCE(' . $sql . ', 0)';
         })->options(fn () => collect(ams_category_options())->map(fn ($c) => ['value' => $c['id'], 'label' => $c['name']])->all()),
         App_table_filter::new('location_id', 'MultiSelectRule')->label(_l('ams_location'))
             ->options(fn () => collect(ams_location_options())->map(fn ($l) => ['value' => $l['id'], 'label' => $l['name']])->all()),
@@ -91,7 +91,7 @@ return App_table::find('ams_valuation')
             $col = 'COALESCE(' . $p . 'ams_assets.depreciation_method, c.depreciation_method, pc.depreciation_method, "none")';
             $sql = $col . ' = ' . get_instance()->db->escape((string) $value);
 
-            return $operator === 'equal' ? $sql : 'NOT (' . $sql . ')';
+            return $operator === 'equal' ? $sql : 'NOT COALESCE(' . $sql . ', 0)';
         })->options(fn () => collect(ams_depreciation_method_options())->map(fn ($m) => ['value' => $m['id'], 'label' => $m['name']])->all()),
         App_table_filter::new('purchase_date', 'DateRule')->label(_l('ams_purchase_date')),
         App_table_filter::new('purchase_cost', 'NumberRule')->label(_l('ams_purchase_cost')),
@@ -100,6 +100,6 @@ return App_table::find('ams_valuation')
             $t   = db_prefix() . 'ams_assets';
             $sql = '(' . $t . '.dep_accumulated > 0 AND ' . $t . '.dep_accumulated >= ' . $t . '.purchase_cost - IFNULL(' . $t . '.salvage_value, 0) - 0.005)';
 
-            return $value == '1' ? $sql : 'NOT ' . $sql;
+            return $value == '1' ? $sql : 'NOT COALESCE(' . $sql . ', 0)';
         }),
     ]);

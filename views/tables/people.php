@@ -53,14 +53,14 @@ return App_table::find('ams_people')
             ->raw(function ($value, $operator) {
                 $sql = db_prefix() . 'staff.staffid IN (SELECT staffid FROM ' . db_prefix() . 'staff_departments WHERE departmentid IN (\'' . implode("','", (array) $value) . '\'))';
 
-                return $operator === 'in' ? $sql : 'NOT ' . $sql;
+                return $operator === 'in' ? $sql : 'NOT COALESCE(' . $sql . ', 0)';
             })
             ->options(fn () => collect(ams_department_options())->map(fn ($d) => ['value' => $d['departmentid'], 'label' => $d['name']])->all()),
         App_table_filter::new('holds_items', 'BooleanRule')->label(_l('ams_holds_items'))->raw(function ($value) {
             $p   = db_prefix();
             $sql = 'EXISTS (SELECT 1 FROM ' . $p . 'ams_assets x WHERE x.is_deleted = 0 AND x.assigned_type = "staff" AND x.assigned_id = ' . $p . 'staff.staffid)';
 
-            return $value == '1' ? $sql : 'NOT ' . $sql;
+            return $value == '1' ? $sql : 'NOT COALESCE(' . $sql . ', 0)';
         }),
         App_table_filter::new('active', 'BooleanRule')->label(_l('ams_active')),
     ]);

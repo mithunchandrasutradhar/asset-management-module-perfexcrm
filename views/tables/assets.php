@@ -153,7 +153,7 @@ return App_table::find('ams_assets')
             ->raw(function ($value, $operator) use ($amsIn) {
                 $sql = '(' . db_prefix() . 'ams_assets.category_id IN (' . $amsIn($value) . ') OR c.parent_id IN (' . $amsIn($value) . '))';
 
-                return $operator === 'in' ? $sql : 'NOT ' . $sql;
+                return $operator === 'in' ? $sql : 'NOT COALESCE(' . $sql . ', 0)';
             })
             ->options(function () {
                 return collect(ams_category_options())->map(fn ($c) => ['value' => $c['id'], 'label' => $c['name']])->all();
@@ -169,7 +169,7 @@ return App_table::find('ams_assets')
                 $t   = db_prefix() . 'ams_assets';
                 $sql = '(' . $t . '.assigned_type = "staff" AND ' . $t . '.assigned_id IN (' . $amsIn($value) . '))';
 
-                return $operator === 'in' ? $sql : 'NOT ' . $sql;
+                return $operator === 'in' ? $sql : 'NOT COALESCE(' . $sql . ', 0)';
             })
             ->options(function () {
                 return collect(ams_staff_options())->map(fn ($s) => ['value' => $s['staffid'], 'label' => $s['firstname'] . ' ' . $s['lastname']])->all();

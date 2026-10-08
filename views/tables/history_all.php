@@ -81,7 +81,7 @@ return App_table::find('ams_history_all')
             $ids = implode(',', array_map('intval', (array) $value)) ?: '0';
             $sql = '(COALESCE(' . $t . '.assigned_type_to, ' . $t . '.assigned_type_from) = "staff" AND COALESCE(' . $t . '.assigned_id_to, ' . $t . '.assigned_id_from) IN (' . $ids . '))';
 
-            return $operator === 'in' ? $sql : 'NOT ' . $sql;
+            return $operator === 'in' ? $sql : 'NOT COALESCE(' . $sql . ', 0)';
         })->options(fn () => collect(ams_staff_options())->map(fn ($s) => ['value' => $s['staffid'], 'label' => $s['firstname'] . ' ' . $s['lastname']])->all()),
         App_table_filter::new('department_id', 'MultiSelectRule')->label(_l('ams_department'))
             ->options(fn () => collect(ams_department_options())->map(fn ($d) => ['value' => $d['departmentid'], 'label' => $d['name']])->all()),

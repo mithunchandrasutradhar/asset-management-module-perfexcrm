@@ -72,7 +72,7 @@ return App_table::find('ams_disposals')
             }
             $sql = 'a.category_id IN (' . implode(',', $ids ?: [0]) . ')';
 
-            return $operator === 'in' ? $sql : 'NOT ' . $sql;
+            return $operator === 'in' ? $sql : 'NOT COALESCE(' . $sql . ', 0)';
         })->options(fn () => collect(ams_category_options())->map(fn ($c) => ['value' => $c['id'], 'label' => $c['name']])->all()),
         App_table_filter::new('proceeds', 'NumberRule')->label(_l('ams_disp_proceeds')),
         App_table_filter::new('gain_loss', 'NumberRule')->label(_l('ams_disp_gain_loss')),

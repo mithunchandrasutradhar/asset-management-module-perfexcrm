@@ -66,7 +66,7 @@ return App_table::find('ams_hb_inventory')
             $values = array_map(fn ($v) => get_instance()->db->escape((string) $v), (array) $value);
             $sql    = ams_hb_state_sql(db_prefix() . 'ams_hb_products') . ' IN (' . (implode(',', $values) ?: "''") . ')';
 
-            return $operator === 'in' ? $sql : 'NOT (' . $sql . ')';
+            return $operator === 'in' ? $sql : 'NOT COALESCE(' . $sql . ', 0)';
         })->options(fn () => collect(['in_stock', 'low', 'out', 'not_tracked'])->map(fn ($s) => ['value' => $s, 'label' => _l('ams_hb_state_' . $s)])->all()),
         App_table_filter::new('orderpage_id', 'MultiSelectRule')->label(_l('ams_hb_group'))->options(function () {
             return collect(get_instance()->db->query('SELECT DISTINCT orderpage_id id, orderpage_name name FROM ' . db_prefix() . 'ams_hb_products WHERE orderpage_id IS NOT NULL ORDER BY orderpage_name')->result_array())

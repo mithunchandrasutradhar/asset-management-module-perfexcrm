@@ -67,13 +67,13 @@ return App_table::find('ams_warranty')
         App_table_filter::new('expired', 'BooleanRule')->label(_l('ams_warranty_expired'))->raw(function ($value) {
             $sql = db_prefix() . 'ams_assets.warranty_end < CURDATE()';
 
-            return $value == '1' ? $sql : 'NOT (' . $sql . ')';
+            return $value == '1' ? $sql : 'NOT COALESCE(' . $sql . ', 0)';
         }),
         App_table_filter::new('expiring_soon', 'BooleanRule')->label(_l('ams_warranty_expiring_soon'))->raw(function ($value) {
             $t   = db_prefix() . 'ams_assets';
             $sql = '(' . $t . '.warranty_end BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL ' . (int) get_option('ams_warranty_expiring_days') . ' DAY))';
 
-            return $value == '1' ? $sql : 'NOT ' . $sql;
+            return $value == '1' ? $sql : 'NOT COALESCE(' . $sql . ', 0)';
         }),
         App_table_filter::new('category_id', 'MultiSelectRule')->label(_l('ams_category'))->raw(function ($value, $operator) {
             $ids = [];
@@ -82,7 +82,7 @@ return App_table::find('ams_warranty')
             }
             $sql = db_prefix() . 'ams_assets.category_id IN (' . implode(',', $ids ?: [0]) . ')';
 
-            return $operator === 'in' ? $sql : 'NOT ' . $sql;
+            return $operator === 'in' ? $sql : 'NOT COALESCE(' . $sql . ', 0)';
         })->options(fn () => collect(ams_category_options())->map(fn ($c) => ['value' => $c['id'], 'label' => $c['name']])->all()),
         App_table_filter::new('location_id', 'MultiSelectRule')->label(_l('ams_location'))
             ->options(fn () => collect(ams_location_options())->map(fn ($l) => ['value' => $l['id'], 'label' => $l['name']])->all()),
